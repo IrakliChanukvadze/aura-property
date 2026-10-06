@@ -97,6 +97,8 @@ model Customer {
  leads Lead[]
 }
 model Lead {
+ contactLanguage String @default("en")
+ inquiryLocale String?
  id String @id @default(cuid())
  customerId String
  customer Customer @relation(fields:[customerId],references:[id],onDelete:Restrict)

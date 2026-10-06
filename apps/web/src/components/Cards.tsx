@@ -21,11 +21,7 @@ export function ProjectCard({
           loading="lazy"
         />
         <span className="project-status">
-          {p.soldOut
-            ? d.soldOut
-            : p.constructionStatus === "COMPLETED"
-              ? d.completed
-              : d.ongoing}
+          {p.constructionStatus === "COMPLETED" ? d.completed : d.ongoing}
         </span>
         <span className="card-arrow">
           <ArrowUpRight size={22} />

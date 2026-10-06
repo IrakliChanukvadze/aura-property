@@ -12,7 +12,7 @@ import {
   saleFor,
 } from "./db.js";
 import { authenticate } from "./auth.js";
-import { phone, stages, commission } from "./domain.js";
+import { phone, stages, commission, agencyDate } from "./domain.js";
 import { assignTeam, chooseAgent, reassign } from "./routing.js";
 import { signingRate } from "./adapters.js";
 const contactBody = z.object({
@@ -130,10 +130,40 @@ export async function crmRoutes(app: FastifyInstance) {
       where: { leadId: l.id, deleted: false },
       orderBy: { createdAt: "asc" },
     });
+    const deletedIds = new Set(
+      (
+        await db.comment.findMany({
+          where: { leadId: l.id, deleted: true },
+          select: { id: true },
+        })
+      ).map((c) => c.id),
+    );
+    const actorNames = new Map(
+      (
+        await db.user.findMany({
+          where: {
+            id: {
+              in: (result?.events || [])
+                .map((e) => e.actorId)
+                .filter((id): id is string => Boolean(id)),
+            },
+          },
+          select: { id: true, name: true },
+        })
+      ).map((u) => [u.id, u.name]),
+    );
     return {
       data: result
         ? {
             ...result,
+            events: result.events.map((e) => ({
+              ...e,
+              actorName: e.actorId ? actorNames.get(e.actorId) : null,
+              data: deletedIds.has((e.data as any)?.id)
+                ? { id: (e.data as any).id, deleted: true }
+                : e.data,
+            })),
+            customer: { ...result.customer, language: result.contactLanguage },
             comments,
             sales: result.sales.map((s) => saleFor(req.actor, s)),
           }
@@ -176,6 +206,7 @@ export async function crmRoutes(app: FastifyInstance) {
             customerId: c.id,
             ...routing,
             source: "MANUAL",
+            contactLanguage: b.language,
             projectIds: b.projectIds,
             budgetMin: b.budgetMin,
             budgetMax: b.budgetMax,
@@ -192,6 +223,16 @@ export async function crmRoutes(app: FastifyInstance) {
     const b = contactBody.partial().omit({ autoAssign: true }).parse(req.body);
     return {
       data: await db.$transaction(async (tx) => {
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${l.id}))`;
+        const latest = await tx.lead.findUniqueOrThrow({ where: { id: l.id } });
+        const minimum = b.budgetMin ?? latest.budgetMin,
+          maximum = b.budgetMax ?? latest.budgetMax;
+        if (
+          minimum != null &&
+          maximum != null &&
+          Number(minimum) > Number(maximum)
+        )
+          throw new ApiError(400, "INVALID_BUDGET", "Minimum exceeds maximum");
         const { name, phone: raw, email, nationality, language, ...fields } = b;
         const p = raw ? phone(raw) : undefined;
         if (
@@ -218,7 +259,10 @@ export async function crmRoutes(app: FastifyInstance) {
         await event(tx, l.id, req.actor.id, "DETAILS_UPDATED", b);
         return tx.lead.update({
           where: { id: l.id },
-          data: fields,
+          data: {
+            ...fields,
+            ...(language ? { contactLanguage: language } : {}),
+          },
           include: { customer: true },
         });
       }),
@@ -234,11 +278,15 @@ export async function crmRoutes(app: FastifyInstance) {
         .object({ projectIds: z.array(z.string()).default([]) })
         .parse(req.body ?? {});
       const result = await db.$transaction(async (tx) => {
+        const assigned = original.agentId
+          ? await tx.user.findUnique({ where: { id: original.agentId } })
+          : null;
         const created = await tx.lead.create({
           data: {
             customerId: original.customerId,
-            teamId: original.teamId,
+            teamId: assigned?.teamId ?? original.teamId,
             agentId: original.agentId,
+            contactLanguage: original.contactLanguage,
             source: "MANUAL",
             projectIds: b.projectIds,
           },
@@ -362,6 +410,12 @@ export async function crmRoutes(app: FastifyInstance) {
     { preHandler: authenticate },
     async (req) => {
       const l = await accessible(req.actor, (req.params as any).id);
+      if (req.actor.role !== "SUPER_ADMIN" && l.teamId !== req.actor.teamId)
+        throw new ApiError(
+          400,
+          "TEAM_CHANGED",
+          "Ask SuperAdmin to reassign this historical lead before reopening it",
+        );
       if (l.stage !== "LOST" || l.lostReview)
         throw new ApiError(
           400,
@@ -545,19 +599,29 @@ export async function crmRoutes(app: FastifyInstance) {
     const b = z.object({ text: z.string().trim().min(1) }).parse(req.body);
     return {
       data: await db.$transaction(async (tx) => {
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${c.id}))`;
+        const current = await tx.comment.findUniqueOrThrow({
+          where: { id: c.id },
+        });
+        if (current.deleted)
+          throw new ApiError(
+            409,
+            "COMMENT_DELETED",
+            "Comment has been deleted",
+          );
         const updated = await tx.comment.update({
           where: { id: c.id },
           data: {
             text: b.text,
             versions: [
-              ...(c.versions as any[]),
-              { text: c.text, at: c.updatedAt.toISOString() },
+              ...(current.versions as any[]),
+              { text: current.text, at: current.updatedAt.toISOString() },
             ],
           },
         });
         await event(tx, c.leadId, req.actor.id, "COMMENT_EDIT", {
           id: c.id,
-          from: c.text,
+          from: current.text,
           to: b.text,
         });
         return updated;
@@ -569,20 +633,18 @@ export async function crmRoutes(app: FastifyInstance) {
     const c = await db.comment.findUniqueOrThrow({
       where: { id: (req.params as any).id },
     });
-    await db.$transaction([
-      db.comment.update({
+    await db.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${c.id}))`;
+      const current = await tx.comment.findUniqueOrThrow({
+        where: { id: c.id },
+      });
+      if (current.deleted) return;
+      await tx.comment.update({
         where: { id: c.id },
         data: { deleted: true, text: "" },
-      }),
-      db.event.create({
-        data: {
-          leadId: c.leadId,
-          actorId: req.actor.id,
-          type: "COMMENT_DELETED",
-          data: { id: c.id },
-        },
-      }),
-    ]);
+      });
+      await event(tx, c.leadId, req.actor.id, "COMMENT_DELETED", { id: c.id });
+    });
     return { data: true };
   });
   app.post(
@@ -842,7 +904,7 @@ export async function crmRoutes(app: FastifyInstance) {
           "FUTURE_SALE",
           "Contract and received deposit dates cannot be in the future",
         );
-      const date = b.signedAt.slice(0, 10);
+      const date = agencyDate(new Date(b.signedAt));
       let fx = 1;
       if (b.currency === "USD") {
         const stored = await db.fxRate.findUnique({ where: { date } });

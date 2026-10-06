@@ -10,3 +10,7 @@ Authorized 2026-10-06. Stack: TypeScript, Next.js public web, React/Vite admin, 
 6. Document runnable setup, provider requirements and verified limitations; no claim of production deployment without evidence.
 
 Approved hero: cityscape default, project collage retained alternative; project showcase rejected.
+
+## Local completion evidence
+
+Implementation and integration slices AURA-001 through AURA-010 are complete locally. Type checks, 23 regressions, all production builds and production dependency audit pass. Browser evidence and release prerequisites are recorded in AURA-010.md and docs/architecture/deployment.md. Production launch is pending owner-supplied assets and service access.

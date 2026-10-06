@@ -28,8 +28,38 @@ export function Explorer({
   const [beds, setBeds] = useState("");
   const [only, setOnly] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null);
+  const [selectionReady, setSelectionReady] = useState(false);
   useEffect(() => {
-    if (unit) dialog.current?.showModal();
+    const params = new URLSearchParams(window.location.search);
+    const bi = Math.max(
+      0,
+      project.buildings.findIndex((b) => b.id === params.get("building")),
+    );
+    const selectedBuilding = project.buildings[bi];
+    const fi = Math.max(
+      0,
+      selectedBuilding?.floors.findIndex((f) => f.id === params.get("floor")) ??
+        0,
+    );
+    const selectedUnit = selectedBuilding?.floors[fi]?.units.find(
+      (u) => u.id === params.get("unit") && u.status === "AVAILABLE",
+    );
+    setBuildingIndex(bi);
+    setFloorIndex(fi);
+    setUnit(selectedUnit || null);
+    setSelectionReady(true);
+  }, [project.id]);
+  useEffect(() => {
+    if (!selectionReady || !building || !floor) return;
+    const url = new URL(window.location.href);
+    url.searchParams.set("building", building.id);
+    url.searchParams.set("floor", floor.id);
+    if (unit) url.searchParams.set("unit", unit.id);
+    else url.searchParams.delete("unit");
+    window.history.replaceState(window.history.state, "", url);
+  }, [selectionReady, building?.id, floor?.id, unit?.id]);
+  useEffect(() => {
+    if (unit && !dialog.current?.open) dialog.current?.showModal();
     else dialog.current?.close();
   }, [unit]);
   if (!building || !floor) return <p className="notice">{d.loadingPlans}</p>;

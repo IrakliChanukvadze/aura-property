@@ -175,6 +175,7 @@ export async function importRoutes(app: FastifyInstance) {
                 customerId: c.id,
                 ...routing,
                 source: "EXCEL",
+                contactLanguage: r.language || "en",
                 projectIds: r.projectIds,
               },
             });

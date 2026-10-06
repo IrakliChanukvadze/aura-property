@@ -8,7 +8,8 @@ export async function assignTeam(tx: any) {
     min = Infinity;
   for (const t of teams) {
     const lead = await tx.user.findUnique({ where: { id: t.leadId } });
-    if (!lead?.active) continue;
+    if (!lead?.active || lead.role !== "TEAM_LEAD" || lead.teamId !== t.id)
+      continue;
     const n = await tx.lead.count({
       where: { teamId: t.id, stage: { in: ["NEW", "NOT_ANSWERED"] } },
     });
@@ -69,7 +70,11 @@ export async function reassign(
   actorId: string,
 ) {
   const u = await tx.user.findUnique({ where: { id: agentId } });
-  if (!u?.active || u.teamId !== lead.teamId)
+  if (
+    !u?.active ||
+    !["AGENT", "TEAM_LEAD"].includes(u.role) ||
+    u.teamId !== lead.teamId
+  )
     throw new ApiError(
       400,
       "INVALID_AGENT",

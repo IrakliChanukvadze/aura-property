@@ -1,10 +1,16 @@
+import { agencyDate } from "./domain.js";
 import type { FastifyInstance } from "fastify";
 import { db, scope, ApiError, saleFor } from "./db.js";
 import { authenticate } from "./auth.js";
 import { z } from "zod";
 export function periodBounds(month: string, yearly = false) {
   const [year, number] = month.split("-").map(Number);
-  if (!Number.isInteger(year) || number < 1 || number > 12)
+  if (
+    !Number.isInteger(year) ||
+    !Number.isInteger(number) ||
+    number < 1 ||
+    number > 12
+  )
     throw new ApiError(400, "INVALID_PERIOD", "Valid year and month required");
   const start = new Date(
     Date.UTC(year, yearly ? 0 : number - 1, 1) - 4 * 3600000,
@@ -15,13 +21,25 @@ export function periodBounds(month: string, yearly = false) {
   return { start, end };
 }
 export async function reportingRoutes(app: FastifyInstance) {
-  app.get("/api/notifications", { preHandler: authenticate }, async (req) => ({
-    data: await db.notification.findMany({
-      where: { userId: req.actor.id },
-      orderBy: { createdAt: "desc" },
-      take: 100,
-    }),
-  }));
+  app.get("/api/notifications", { preHandler: authenticate }, async (req) => {
+    const visible =
+      req.actor.role === "EDITOR"
+        ? []
+        : await db.lead.findMany({
+            where: await scope(req.actor),
+            select: { id: true },
+          });
+    return {
+      data: await db.notification.findMany({
+        where: {
+          userId: req.actor.id,
+          OR: [{ leadId: null }, { leadId: { in: visible.map((l) => l.id) } }],
+        },
+        orderBy: { createdAt: "desc" },
+        take: 100,
+      }),
+    };
+  });
   app.patch(
     "/api/notifications/:id",
     { preHandler: authenticate },
@@ -35,9 +53,14 @@ export async function reportingRoutes(app: FastifyInstance) {
   );
   app.get("/api/commissions", { preHandler: authenticate }, async (req) => {
     const u = req.actor;
+    const month = (req.query as any).month;
+    const selectedPeriod = month ? periodBounds(month) : null;
     const sales = await db.sale.findMany({
       where: {
         reversedAt: null,
+        ...(selectedPeriod
+          ? { signedAt: { gte: selectedPeriod.start, lt: selectedPeriod.end } }
+          : {}),
         ...(u.role === "SUPER_ADMIN"
           ? {}
           : u.role === "TEAM_LEAD"
@@ -113,7 +136,7 @@ export async function reportingRoutes(app: FastifyInstance) {
         month: z
           .string()
           .regex(/^\d{4}-\d{2}$/)
-          .default(new Date().toISOString().slice(0, 7)),
+          .default(agencyDate(new Date()).slice(0, 7)),
       })
       .parse(req.query);
     return { data: await leaderboard(q.period, q.month) };
@@ -124,7 +147,7 @@ export async function reportingRoutes(app: FastifyInstance) {
         month: z
           .string()
           .regex(/^\d{4}-\d{2}$/)
-          .default(new Date().toISOString().slice(0, 7)),
+          .default(agencyDate(new Date()).slice(0, 7)),
       })
       .parse(req.query);
     const { start, end } = periodBounds(q.month);
@@ -145,7 +168,7 @@ export async function reportingRoutes(app: FastifyInstance) {
     const sales = await db.sale.findMany({
       where: saleWhere,
       include: { lead: { include: { customer: true } } },
-      orderBy: { signedAt: "desc" },
+      orderBy: { createdAt: "desc" },
     });
     const earningSales = await db.sale.findMany({
       where: {
@@ -162,6 +185,14 @@ export async function reportingRoutes(app: FastifyInstance) {
             }),
       },
     });
+    const apartmentNumbers = new Map(
+      (
+        await db.unit.findMany({
+          where: { id: { in: sales.map((s) => s.unitId) } },
+          select: { id: true, number: true },
+        })
+      ).map((u) => [u.id, u.number]),
+    );
     return {
       data: {
         month: q.month,
@@ -187,7 +218,11 @@ export async function reportingRoutes(app: FastifyInstance) {
                 Number(s.actingUserId === req.actor.id ? s.actingAmount : 0)),
           0,
         ),
-        latestWon: sales.slice(0, 3).map((s) => saleFor(req.actor, s)),
+        latestWon: sales.slice(0, 3).map((s) => ({
+          ...saleFor(req.actor, s),
+          unitNumber: apartmentNumbers.get(s.unitId),
+          customerName: s.lead.customer.name,
+        })),
         leaderboards: await leaderboard("monthly", q.month),
       },
     };

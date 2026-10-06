@@ -582,8 +582,8 @@ function Inventory({
                     if (min === null) return;
                     try {
                       await api(`/units/${u.id}`, "PATCH", {
-                        minimumPrice: Number(min),
-                        minimumCurrency: u.priceCurrency,
+                        minimumPrice: min.trim() ? Number(min) : null,
+                        minimumCurrency: min.trim() ? u.priceCurrency : null,
                       });
                       await reload();
                     } catch (e) {

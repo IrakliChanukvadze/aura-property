@@ -95,6 +95,21 @@ test("authorization scopes lead details, exports, content-only editor and deacti
     (await request(b, "GET", `/api/leads/${lead.id}`)).statusCode,
     404,
   );
+  await db.notification.create({
+    data: {
+      userId: b.u.id,
+      leadId: lead.id,
+      kind: "LOST_REVIEW",
+      text: "Other agent private reason",
+    },
+  });
+  assert.equal(
+    (await request(b, "GET", "/api/notifications")).body.includes(
+      "Other agent private reason",
+    ),
+    false,
+  );
+
   assert.equal((await request(a, "GET", "/api/leads/export")).statusCode, 403);
   assert.equal(
     (
@@ -513,15 +528,174 @@ test("Excel template preview flags duplicates and imports only valid rows to age
   );
 });
 
-test("website content is editable per-user and public projection excludes private commission settings", async()=>{
- const owner=await account("SUPER_ADMIN"),agent=await account("AGENT");
- const before=(await request(owner,"GET","/api/site")).json().data;
- assert.equal((await request(agent,"PATCH","/api/site",{translations:{en:{hero:"Unauthorized"}}})).statusCode,403);
- try {
-  const response=await request(owner,"PATCH","/api/site",{heroVariant:"cityscape",translations:{en:{hero:"Preview headline"}}});
-  assert.equal(response.statusCode,200);
-  const publicResult=(await app.inject({method:"GET",url:"/api/public/site"})).json().data;
-  assert.equal(publicResult.translations.en.hero,"Preview headline");
-  assert.equal(publicResult.defaultAgentRate,undefined);
- } finally {await request(owner,"PATCH","/api/site",before);}
+test("website content is editable per-user and public projection excludes private commission settings", async () => {
+  const owner = await account("SUPER_ADMIN"),
+    agent = await account("AGENT");
+  const before = (await request(owner, "GET", "/api/site")).json().data;
+  assert.equal(
+    (
+      await request(agent, "PATCH", "/api/site", {
+        translations: { en: { hero: "Unauthorized" } },
+      })
+    ).statusCode,
+    403,
+  );
+  try {
+    const response = await request(owner, "PATCH", "/api/site", {
+      heroVariant: "cityscape",
+      translations: { en: { hero: "Preview headline" } },
+    });
+    assert.equal(response.statusCode, 200);
+    const publicResult = (
+      await app.inject({ method: "GET", url: "/api/public/site" })
+    ).json().data;
+    assert.equal(publicResult.translations.en.hero, "Preview headline");
+    assert.equal(publicResult.defaultAgentRate, undefined);
+  } finally {
+    await request(owner, "PATCH", "/api/site", before);
+  }
+});
+
+test("deleted comments remain audited but their text is redacted from ordinary timelines", async () => {
+  const agent = await account("AGENT"),
+    owner = await account("SUPER_ADMIN");
+  const customer = await db.customer.create({
+    data: {
+      name: "Comment preview",
+      phone: `+1888${Math.floor(Math.random() * 9000000 + 1000000)}`,
+    },
+  });
+  customerIds.push(customer.id);
+  const lead = await db.lead.create({
+    data: { customerId: customer.id, agentId: agent.u.id, source: "MANUAL" },
+  });
+  const comment = await request(
+    agent,
+    "POST",
+    `/api/leads/${lead.id}/comments`,
+    { text: "Private preview comment text" },
+  );
+  assert.equal(comment.statusCode, 200);
+  assert.equal(
+    (await request(agent, "DELETE", `/api/comments/${comment.json().data.id}`))
+      .statusCode,
+    403,
+  );
+  assert.equal(
+    (await request(owner, "DELETE", `/api/comments/${comment.json().data.id}`))
+      .statusCode,
+    200,
+  );
+  const visible = await request(agent, "GET", `/api/leads/${lead.id}`);
+  assert.equal(visible.statusCode, 200);
+  assert.equal(visible.body.includes("Private preview comment text"), false);
+  assert.ok(
+    await db.event.findFirst({
+      where: { leadId: lead.id, type: "COMMENT_DELETED" },
+    }),
+  );
+});
+
+test("due reminder delivery is once-only and cancelled reminders stay cancelled", async () => {
+  const agent = await account("AGENT");
+  const customer = await db.customer.create({
+    data: {
+      name: "Reminder preview",
+      phone: `+1777${Math.floor(Math.random() * 9000000 + 1000000)}`,
+    },
+  });
+  customerIds.push(customer.id);
+  const lead = await db.lead.create({
+    data: { customerId: customer.id, agentId: agent.u.id, source: "MANUAL" },
+  });
+  await db.reminder.create({
+    data: {
+      leadId: lead.id,
+      userId: agent.u.id,
+      kind: "MANUAL",
+      text: "Due reminder preview",
+      dueAt: new Date(Date.now() - 1000),
+    },
+  });
+  await db.reminder.create({
+    data: {
+      leadId: lead.id,
+      userId: agent.u.id,
+      kind: "UNANSWERED",
+      text: "Cancelled reminder preview",
+      dueAt: new Date(Date.now() - 1000),
+      state: "CANCELLED",
+    },
+  });
+  const { runJobs } = await import("./jobs.js");
+  await runJobs();
+  await runJobs();
+  assert.equal(
+    await db.notification.count({ where: { leadId: lead.id, kind: "MANUAL" } }),
+    1,
+  );
+  assert.equal(
+    await db.notification.count({
+      where: { leadId: lead.id, kind: "UNANSWERED" },
+    }),
+    0,
+  );
+});
+
+test("the owner cannot lose access and contact language remains opportunity-specific", async () => {
+  const owner = await account("SUPER_ADMIN");
+  assert.equal(
+    (
+      await request(owner, "PATCH", `/api/users/${owner.u.id}`, {
+        active: false,
+      })
+    ).statusCode,
+    400,
+  );
+  assert.equal(
+    (
+      await request(owner, "PATCH", `/api/users/${owner.u.id}`, {
+        role: "AGENT",
+      })
+    ).statusCode,
+    400,
+  );
+  assert.equal(
+    (await db.user.findUniqueOrThrow({ where: { id: owner.u.id } })).role,
+    "SUPER_ADMIN",
+  );
+  const customer = await db.customer.create({
+    data: {
+      name: "Language buyer",
+      phone: `+1${Date.now().toString().slice(-10)}`,
+      language: "en",
+    },
+  });
+  customerIds.push(customer.id);
+  const first = await db.lead.create({
+    data: {
+      customerId: customer.id,
+      agentId: owner.u.id,
+      source: "MANUAL",
+      contactLanguage: "he",
+    },
+  });
+  const second = await db.lead.create({
+    data: {
+      customerId: customer.id,
+      agentId: owner.u.id,
+      source: "MANUAL",
+      contactLanguage: "ru",
+    },
+  });
+  assert.equal(
+    (await request(owner, "GET", `/api/leads/${first.id}`)).json().data.customer
+      .language,
+    "he",
+  );
+  assert.equal(
+    (await request(owner, "GET", `/api/leads/${second.id}`)).json().data
+      .customer.language,
+    "ru",
+  );
 });

@@ -7,7 +7,44 @@ export async function runJobs() {
     const due = await tx.reminder.findMany({
       where: { state: "PENDING", dueAt: { lte: now } },
     });
-    for (const r of due) {
+    const reservations = await tx.reservation.findMany({
+      where: { releasedAt: null, nextReviewAt: { lte: now } },
+      include: { lead: true },
+    });
+    const leaves = await tx.leave.findMany({
+      where: {
+        status: "APPROVED",
+        reassign: { not: [] },
+        startsAt: { lte: now },
+        endsAt: { gte: now },
+      },
+    });
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(481529)`;
+    const userIds = [...new Set(leaves.map((l: any) => l.userId))].sort();
+    for (const id of userIds)
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${id}))`;
+    const leadIds = [
+      ...new Set([
+        ...due.map((r: any) => r.leadId),
+        ...reservations.map((r: any) => r.leadId),
+        ...leaves.flatMap((l: any) =>
+          (l.reassign as any[]).map((p) => p.leadId),
+        ),
+      ]),
+    ]
+      .filter(Boolean)
+      .sort();
+    for (const id of leadIds)
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${id}))`;
+    for (const initial of due) {
+      const r = await tx.reminder.findUniqueOrThrow({
+        where: { id: initial.id },
+      });
+      const claimed = await tx.reminder.updateMany({
+        where: { id: r.id, state: "PENDING", dueAt: { lte: now } },
+        data: { state: "DELIVERED" },
+      });
+      if (!claimed.count) continue;
       await tx.notification.create({
         data: {
           userId: r.userId,
@@ -21,10 +58,6 @@ export async function runJobs() {
         data: { state: "DELIVERED" },
       });
     }
-    const reservations = await tx.reservation.findMany({
-      where: { releasedAt: null, nextReviewAt: { lte: now } },
-      include: { lead: true },
-    });
     for (const initial of reservations) {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${initial.unitId}))`;
       const r = await tx.reservation.findUniqueOrThrow({
@@ -70,14 +103,10 @@ export async function runJobs() {
         },
       });
     }
-    const leaves = await tx.leave.findMany({
-      where: {
-        status: "APPROVED",
-        startsAt: { lte: now },
-        endsAt: { gte: now },
-      },
-    });
-    for (const l of leaves) {
+    for (const initial of leaves) {
+      const l = await tx.leave.findUniqueOrThrow({ where: { id: initial.id } });
+      if (l.status !== "APPROVED" || (l.returnAt && l.returnAt <= now))
+        continue;
       const plans = l.reassign as any[];
       if (!plans.length) continue;
       for (const p of plans) {

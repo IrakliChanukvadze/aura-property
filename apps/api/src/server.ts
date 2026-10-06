@@ -68,17 +68,15 @@ export async function buildApp() {
       (err as any).statusCode < 500
     ) {
       const status = (err as any).statusCode;
-      return reply
-        .status(status)
-        .send({
-          error: {
-            code: status === 429 ? "RATE_LIMIT" : "BAD_REQUEST",
-            message:
-              status === 429
-                ? "Too many requests. Please try again later."
-                : "Request could not be accepted",
-          },
-        });
+      return reply.status(status).send({
+        error: {
+          code: status === 429 ? "RATE_LIMIT" : "BAD_REQUEST",
+          message:
+            status === 429
+              ? "Too many requests. Please try again later."
+              : "Request could not be accepted",
+        },
+      });
     }
     req.log.error(err);
     return reply.status(500).send({
@@ -102,17 +100,65 @@ export async function buildApp() {
 }
 if (process.env.NODE_ENV !== "test") {
   const app = await buildApp();
+  let timer: ReturnType<typeof setTimeout>;
+  let stopped = false,
+    ticking = false,
+    wakeRequested = false;
+  const tick = async () => {
+    if (stopped || ticking) return;
+    ticking = true;
+    let delay = 15000;
+    try {
+      await runJobs();
+      const [reminder, reservation] = await Promise.all([
+        db.reminder.aggregate({
+          where: { state: "PENDING" },
+          _min: { dueAt: true },
+        }),
+        db.reservation.aggregate({
+          where: { releasedAt: null },
+          _min: { nextReviewAt: true },
+        }),
+      ]);
+      const targets = [
+        reminder._min.dueAt,
+        reservation._min.nextReviewAt,
+      ].filter((v): v is Date => Boolean(v));
+      if (targets.length)
+        delay = Math.min(
+          15000,
+          Math.max(
+            25,
+            Math.min(...targets.map((v) => v.getTime())) - Date.now(),
+          ),
+        );
+    } catch (error) {
+      app.log.error(error);
+    }
+    ticking = false;
+    if (!stopped) {
+      timer = setTimeout(tick, wakeRequested ? 0 : delay);
+      wakeRequested = false;
+      timer.unref();
+    }
+  };
+  app.addHook("onResponse", async (req) => {
+    if (stopped || ["GET", "HEAD", "OPTIONS"].includes(req.method)) return;
+    if (ticking) wakeRequested = true;
+    else {
+      clearTimeout(timer);
+      timer = setTimeout(tick, 0);
+      timer.unref();
+    }
+  });
   await app.listen({
     port: Number(process.env.PORT ?? 4000),
     host: process.env.HOST ?? "127.0.0.1",
   });
-  const timer = setInterval(
-    () => runJobs().catch((e) => app.log.error(e)),
-    15000,
-  );
-  timer.unref();
+  void tick();
   const stop = async () => {
-    clearInterval(timer);
+    stopped = true;
+    clearTimeout(timer);
     await app.close();
     await db.$disconnect();
     process.exit(0);

@@ -42,17 +42,38 @@ export async function acting(u: Actor) {
     },
   }));
 }
+export async function permanent(u: Actor) {
+  return (
+    u.role === "TEAM_LEAD" &&
+    Boolean(u.teamId) &&
+    Boolean(
+      await db.team.findFirst({
+        where: { id: u.teamId!, leadId: u.id, active: true },
+      }),
+    )
+  );
+}
 export async function scope(u: Actor) {
   if (u.role === "SUPER_ADMIN") return {};
-  if (u.role === "TEAM_LEAD" && u.teamId) return { teamId: u.teamId };
-  if (await acting(u))
+  if (u.role === "EDITOR") return { id: "__no_crm_access__" };
+  const personal = {
+    OR: [
+      { agentId: u.id, stage: { in: ["LOST", "WON"] } },
+      { agentId: u.id, teamId: u.teamId, stage: { notIn: ["LOST", "WON"] } },
+    ],
+  };
+  if (await permanent(u))
     return {
       OR: [
-        { agentId: u.id },
-        { teamId: u.teamId, stage: { notIn: ["LOST", "WON"] } },
+        { teamId: u.teamId },
+        { agentId: u.id, stage: { in: ["LOST", "WON"] } },
       ],
     };
-  return { agentId: u.id };
+  if (await acting(u))
+    return {
+      OR: [personal, { teamId: u.teamId, stage: { notIn: ["LOST", "WON"] } }],
+    };
+  return personal;
 }
 export async function accessible(u: Actor, id: string) {
   const lead = await db.lead.findFirst({
@@ -70,12 +91,16 @@ export const event = (
   data: any,
 ) => tx.event.create({ data: { leadId, actorId, type, data } });
 export async function teamAuthority(u: Actor) {
-  if (u.role === "SUPER_ADMIN" || u.role === "TEAM_LEAD" || (await acting(u)))
+  if (u.role === "SUPER_ADMIN" || (await permanent(u)) || (await acting(u)))
     return;
   throw new ApiError(403, "FORBIDDEN", "Team authority required");
 }
 export function saleFor(u: Actor, s: any) {
-  if (u.role === "SUPER_ADMIN" || u.role === "TEAM_LEAD") return s;
+  if (
+    u.role === "SUPER_ADMIN" ||
+    (u.role === "TEAM_LEAD" && s.teamId === u.teamId)
+  )
+    return s;
   const {
     leadAmount,
     actingAmount,
@@ -89,6 +114,8 @@ export function saleFor(u: Actor, s: any) {
     ...rest,
     agentAmount: s.agentId === u.id ? agentAmount : undefined,
     agentRate: s.agentId === u.id ? agentRate : undefined,
+    leadAmount: s.leadUserId === u.id ? leadAmount : undefined,
+    leadRate: s.leadUserId === u.id ? leadRate : undefined,
     actingAmount: s.actingUserId === u.id ? actingAmount : undefined,
     actingRate: s.actingUserId === u.id ? actingRate : undefined,
   };

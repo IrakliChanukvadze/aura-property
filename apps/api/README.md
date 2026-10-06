@@ -24,7 +24,7 @@ Demo seed is explicitly forbidden in production. It creates illustrative project
 - `/api/schedules`, `/leave`: five-day flexible weekly schedules, owner approval for permanent-lead schedule/leave, calendar workday snapshots, two completed-month days accrued, indefinite carryover and −2 floor, cancellation/early return approval.
 - `/api/uploads`: base64 JPEG/PNG/WebP or PDF signatures checked, 10 MB maximum. Optional agreements are linked to a lead and accessed with its permissions. Public covers publish only when actually referenced by public content.
 
-Background jobs run every 15 seconds with database locking: exact due timestamps persist; delivery may be up to one polling interval later. They deliver header reminders, reservation 24-hour reviews/48-hour owner escalation, and optional vacation start-date lead reassignment. Reassignment keeps pending due times. Production should run a separately monitored worker before operating at scale.
+Background jobs recover new tasks at most every15seconds and wake after mutations. Known reminder/reservation deadlines wake the worker at their persisted due timestamp. Delivery depends on process health; the header refresh can lag by its client polling interval. They deliver header reminders, reservation 24-hour reviews/48-hour owner escalation, and optional vacation start-date lead reassignment. Reassignment keeps pending due times. Production should run a separately monitored worker before operating at scale.
 
 ## Provider boundaries
 

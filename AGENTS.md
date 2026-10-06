@@ -25,4 +25,4 @@ Small reversible fixes do not require a full interview. Do not reopen settled de
 Approved implementation stack: TypeScript npm monorepo; Next.js/React public website, React/Vite admin, Node/Fastify backend, PostgreSQL/Prisma. Deployment topology and external providers remain to verify. Cloudflare is the owner's deployment direction, not an approval of a specific service configuration. Proceed with approved architecture; isolate provider-dependent adapters. Enforce lead visibility and per-user permissions on the server. Never rely on hidden UI controls for authorization. Never expose secrets in documentation or reports.
 
 ## State
-MVP implementation authorized. Latest confirmed business decisions supersede earlier entries. Existing documents include proposals explicitly marked as such. No application release is ready.
+MVP implementation authorized. Latest confirmed business decisions supersede earlier entries. Existing documents include proposals explicitly marked as such. Local MVP implementation is verified; production launch remains pending the documented content and provider prerequisites.

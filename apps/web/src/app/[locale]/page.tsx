@@ -18,11 +18,10 @@ export async function generateMetadata({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
-  return metadata(
-    isLocale(locale) ? locale : "en",
-    "Residential developments in Georgia",
-    t(isLocale(locale) ? locale : "en").heroBody,
-  );
+  const selected = isLocale(locale) ? locale : "en";
+  const site = await publicSite();
+  const copy = { ...t(selected), ...site.translations?.[selected] };
+  return metadata(selected, copy.heroEyebrow, copy.heroBody);
 }
 export default async function Page({
   params,

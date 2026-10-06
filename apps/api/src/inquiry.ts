@@ -148,6 +148,7 @@ export async function inquiryRoutes(app: FastifyInstance) {
               const u = previous.agentId
                 ? await tx.user.findUnique({ where: { id: previous.agentId } })
                 : null;
+              if (u?.teamId) routing.teamId = u.teamId;
               const onLeave = u
                 ? await tx.leave.findFirst({
                     where: {
@@ -155,12 +156,20 @@ export async function inquiryRoutes(app: FastifyInstance) {
                       status: "APPROVED",
                       startsAt: { lte: new Date() },
                       endsAt: { gte: new Date() },
+                      OR: [
+                        { returnAt: null },
+                        { returnAt: { gt: new Date() } },
+                      ],
                     },
                   })
                 : null;
-              if (!u?.active || onLeave) {
-                const t = previous.teamId
-                  ? await tx.team.findUnique({ where: { id: previous.teamId } })
+              if (
+                !u?.active ||
+                !["AGENT", "TEAM_LEAD", "SUPER_ADMIN"].includes(u.role) ||
+                onLeave
+              ) {
+                const t = routing.teamId
+                  ? await tx.team.findUnique({ where: { id: routing.teamId } })
                   : null;
                 routing.agentId = t?.leadId ?? null;
               }
@@ -180,6 +189,8 @@ export async function inquiryRoutes(app: FastifyInstance) {
               customerId: customer.id,
               ...routing,
               source: "WEBSITE",
+              contactLanguage: b.locale,
+              inquiryLocale: b.locale,
               inquiryProjectId: b.projectId,
               inquiryUnitId: b.unitId,
               projectIds: b.projectId ? [b.projectId] : [],
@@ -192,6 +203,9 @@ export async function inquiryRoutes(app: FastifyInstance) {
             existing ? "DUPLICATE_INQUIRY" : "INQUIRY",
             {
               message: b.message ?? "",
+              locale: b.locale,
+              submittedName: b.name,
+              submittedEmail: b.email ?? "",
               originalProject: b.projectId ?? null,
               originalUnit: b.unitId ?? null,
               apartmentSizes: b.apartmentSizes ?? [],

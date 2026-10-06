@@ -28,6 +28,8 @@ const title = (s: string) =>
   );
 function timelineText(event: any, agents: any[], projects: any[]) {
   const data = event.payload || event.data || {};
+  if (data.deleted) return t("Comment deleted");
+  if (event.type === "COMMENT_EDIT") return data.to || "";
   if (data.comment || data.text || data.message)
     return data.comment || data.text || data.message;
   if (event.type === "ASSIGNED")
@@ -826,7 +828,10 @@ export function Leads({
               <article key={event.id}>
                 <span className="timeline-dot" />
                 <strong>{title(event.type || event.kind || "Update")}</strong>
-                <small>{new Date(event.createdAt).toLocaleString()}</small>
+                <small>
+                  {event.actorName || t("System")} ·{" "}
+                  {new Date(event.createdAt).toLocaleString()}
+                </small>
                 <p>
                   {event.text ||
                     event.comment ||
@@ -1115,7 +1120,21 @@ function LeadExtras({
         .filter((c: any) => !c.deleted)
         .map((c: any) => (
           <div className="list-row" key={c.id}>
-            <p>{c.text}</p>
+            <div>
+              <p>{c.text}</p>
+              {c.versions?.length > 0 && (
+                <details>
+                  <summary>{t("Previous versions")}</summary>
+                  {c.versions.map((v: any, i: number) => (
+                    <p key={i}>
+                      <small>{new Date(v.at).toLocaleString()}</small>
+                      <br />
+                      {v.text}
+                    </p>
+                  ))}
+                </details>
+              )}
+            </div>
             {c.actorId === user.id && (
               <button
                 onClick={() => {

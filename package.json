@@ -17,7 +17,8 @@
     "db:seed": "node scripts/env.mjs npm run seed -w @aura/database",
     "dev": "node scripts/dev.mjs",
     "setup": "node scripts/setup.mjs",
-    "format": "prettier --write apps packages scripts docs tasks"
+    "format": "prettier --write apps packages scripts docs tasks",
+    "owner:init": "node scripts/env.mjs npm exec -w @aura/api -- tsx src/bootstrap.ts"
   },
   "engines": {
     "node": ">=22"

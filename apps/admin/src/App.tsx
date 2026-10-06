@@ -147,6 +147,12 @@ export default function App() {
                         type: "password",
                         required: true,
                       },
+                      {
+                        name: "locale",
+                        label: t("Admin language"),
+                        options: languages,
+                        value: locale,
+                      },
                     ]
                   : [
                       {
@@ -174,7 +180,7 @@ export default function App() {
               await api(
                 token ? "/auth/accept-invitation" : "/auth/login",
                 "POST",
-                token ? { token, password: v.password } : v,
+                token ? { token, password: v.password, locale: v.locale } : v,
               );
               if (token) {
                 history.replaceState(null, "", location.pathname);

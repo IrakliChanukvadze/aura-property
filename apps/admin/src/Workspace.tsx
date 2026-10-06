@@ -10,16 +10,22 @@ export function Dashboard() {
     ),
     [data, setData] = useState<any>({}),
     [rank, setRank] = useState<any>({}),
+    [commissions, setCommissions] = useState<any[]>([]),
+    [staff, setStaff] = useState<any[]>([]),
     [period, setPeriod] = useState("monthly"),
     [error, setError] = useState("");
   useEffect(() => {
     Promise.all([
       api(`/dashboard?month=${month}`),
       api(`/leaderboards?month=${month}&period=${period}`),
+      api(`/commissions?month=${month}`),
+      api("/users"),
     ])
-      .then(([d, r]) => {
+      .then(([d, r, earnings, people]) => {
         setData(d);
         setRank(r);
+        setCommissions(earnings);
+        setStaff(people);
       })
       .catch((e) => setError(e.message));
   }, [month, period]);
@@ -81,19 +87,19 @@ export function Dashboard() {
       </div>
       <div className="dashboard-grid">
         <section className="panel">
+          <h2>{t("Team leaderboard")}</h2>
+          <p className="muted">{t("Sold apartments · shared ranking")}</p>
+          <Ranking rows={data.leaderboards?.teams || rank.teams || []} />
+        </section>
+        <section className="panel">
           <h2>
             {period === "yearly"
               ? t("Yearly individual ranking")
-              : t("Team leaderboard")}
+              : t("Individual leaderboard")}
           </h2>
-          <p className="muted">{t("Sold apartments · shared ranking")}</p>
-          <Ranking
-            rows={period === "yearly" ? rank.agents || [] : rank.teams || []}
-          />
-        </section>
-        <section className="panel">
-          <h2>{t("Individual leaderboard")}</h2>
-          <p className="muted">{t("This month")}</p>
+          <p className="muted">
+            {period === "yearly" ? t("Calendar year") : t("This month")}
+          </p>
           <Ranking rows={rank.agents || rank.individuals || []} />
         </section>
         <section className="panel">
@@ -103,15 +109,73 @@ export function Dashboard() {
               <span className="avatar">✓</span>
               <div>
                 <strong>
-                  {l.customer?.name || l.lead?.customer?.name || l.name}
+                  {l.customerName ||
+                    l.customer?.name ||
+                    l.lead?.customer?.name ||
+                    l.name}
                 </strong>
-                <small>{l.unit?.number || l.unitId || "Signed sale"}</small>
+                <small>
+                  {l.unitNumber
+                    ? `${t("Apartment")} #${l.unitNumber}`
+                    : t("Signed sale")}
+                </small>
               </div>
               <span className="badge">{t("Won")}</span>
             </div>
           ))}
           {!data.latestWon?.length && (
             <Empty text={t("Your latest signed sales will appear here")} />
+          )}
+        </section>
+        <section className="panel">
+          <h2>{t("Commission earnings")}</h2>
+          {commissions.length ? (
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>{t("Contract signing date")}</th>
+                    <th>{t("Agent")}</th>
+                    <th>{t("Earnings")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {commissions.map((s) => (
+                    <tr key={s.id}>
+                      <td>
+                        {new Date(s.signedAt).toLocaleDateString(undefined, {
+                          timeZone: "Asia/Tbilisi",
+                        })}
+                      </td>
+                      <td>
+                        {staff.find((u) => u.id === s.agentId)?.name ||
+                          t("Your earnings")}
+                      </td>
+                      <td>
+                        {s.amount !== undefined ? (
+                          <Money value={s.amount} />
+                        ) : (
+                          <div>
+                            {t("Agent")}: <Money value={s.agentAmount} />
+                            <br />
+                            {t("Team lead")}: <Money value={s.leadAmount} />
+                            {Number(s.actingAmount) > 0 && (
+                              <>
+                                <br />
+                                {t("Acting lead")}:{" "}
+                                <Money value={s.actingAmount} />
+                              </>
+                            )}
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <Empty />
           )}
         </section>
         <section className="panel">
@@ -731,13 +795,13 @@ export function Personnel({ user }: { user: any }) {
                   name: "agentRate",
                   label: t("Agent commission %"),
                   type: "number",
-                  value: selected.agentRate || 1,
+                  value: selected.agentRate ?? 1,
                 },
                 {
                   name: "leadRate",
                   label: t("Team-lead commission %"),
                   type: "number",
-                  value: selected.leadRate || 0.5,
+                  value: selected.leadRate ?? 0.5,
                 },
               ]}
               onSubmit={async (v) => {
@@ -749,7 +813,7 @@ export function Personnel({ user }: { user: any }) {
                   moveLeadIds,
                   ...settings
                 } = v;
-                await api(`/users/${selected.id}`, "PATCH", {
+                const payload: any = {
                   ...settings,
                   teamId: v.teamId || null,
                   publicProfile: v.publicProfile === "true",
@@ -764,7 +828,20 @@ export function Personnel({ user }: { user: any }) {
                   contentEdit: v.contentEdit === "true",
                   agentRate: Number(v.agentRate),
                   leadRate: Number(v.leadRate),
-                });
+                };
+                if (selected.role === "SUPER_ADMIN")
+                  for (const key of [
+                    "role",
+                    "active",
+                    "teamId",
+                    "agentRate",
+                    "leadRate",
+                    "moveLeadIds",
+                    "redistribution",
+                  ])
+                    delete payload[key];
+                await api(`/users/${selected.id}`, "PATCH", payload);
+
                 await close();
               }}
             />

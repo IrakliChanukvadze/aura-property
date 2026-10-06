@@ -140,7 +140,11 @@ export async function authRoutes(app: FastifyInstance) {
   );
   app.post("/api/auth/accept-invitation", async (req) => {
     const b = z
-      .object({ token: z.string(), password: z.string().min(12) })
+      .object({
+        token: z.string(),
+        password: z.string().min(12),
+        locale: z.enum(["en", "ka", "ru", "he"]).optional(),
+      })
       .parse(req.body);
     await db.$transaction(async (tx) => {
       const t = await tx.token.findUnique({ where: { hash: digest(b.token) } });
@@ -157,7 +161,10 @@ export async function authRoutes(app: FastifyInstance) {
         throw new ApiError(400, "INVALID_TOKEN", "Token already used");
       await tx.user.update({
         where: { id: u.id },
-        data: { passwordHash: hashPassword(b.password) },
+        data: {
+          passwordHash: hashPassword(b.password),
+          ...(b.locale ? { locale: b.locale } : {}),
+        },
       });
       await tx.session.deleteMany({ where: { userId: u.id } });
     });
@@ -205,9 +212,21 @@ export async function authRoutes(app: FastifyInstance) {
       (b.role !== "AGENT" || b.contentEdit)
     )
       throw new ApiError(403, "FORBIDDEN", "Team leads may create agents only");
-    const selectedTeam=req.actor.role === "SUPER_ADMIN" ? b.teamId : req.actor.teamId;
-    if(b.role === "AGENT" && !selectedTeam) throw new ApiError(400,"TEAM_REQUIRED","Choose a team for the agent");
-    if(selectedTeam && !await db.team.findFirst({where:{id:selectedTeam,active:true}})) throw new ApiError(400,"INVALID_TEAM","Choose an active team");
+    const selectedTeam =
+      req.actor.role === "SUPER_ADMIN" ? b.teamId : req.actor.teamId;
+    if (b.role === "AGENT" && !selectedTeam)
+      throw new ApiError(400, "TEAM_REQUIRED", "Choose a team for the agent");
+    if (
+      selectedTeam &&
+      !(await db.team.findFirst({ where: { id: selectedTeam, active: true } }))
+    )
+      throw new ApiError(400, "INVALID_TEAM", "Choose an active team");
+    if (b.role === "TEAM_LEAD" && selectedTeam)
+      throw new ApiError(
+        400,
+        "TEAM_LEAD_SETUP",
+        "Create the team lead without a team, then create their team",
+      );
     const defaults = await agencySettings();
     const u = await db.user.create({
       data: {
@@ -267,6 +286,27 @@ export async function authRoutes(app: FastifyInstance) {
     }
     const u = await db.$transaction(async (tx) => {
       const previous = await tx.user.findUniqueOrThrow({ where: { id } });
+      if (
+        previous.role === "SUPER_ADMIN" &&
+        (b.role !== undefined || b.active === false)
+      )
+        throw new ApiError(
+          400,
+          "OWNER_PROTECTED",
+          "The sole owner role and access cannot be removed",
+        );
+      if (b.role === "TEAM_LEAD" && (b.teamId ?? previous.teamId)) {
+        const team = await tx.team.findUnique({
+          where: { id: (b.teamId ?? previous.teamId)! },
+        });
+        if (team && team.leadId !== id)
+          throw new ApiError(
+            400,
+            "TEAM_LEAD_EXISTS",
+            "This team already has a permanent lead",
+          );
+      }
+
       const { redistribution, moveLeadIds, ...update } = b;
       const activeLeads = await tx.lead.findMany({
         where: { agentId: id, stage: { notIn: ["LOST", "WON"] } },

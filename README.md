@@ -28,6 +28,10 @@ Do not build Next.js while its development server is using the same output direc
 
 Start with `AGENTS.md`, `docs/product/mvp-spec.md` and `docs/product/acceptance.md`. The decision ledger retains superseded history; current spec resolves it. Ticket evidence lives in `tasks/implementation`. Hero cityscape is default; set `NEXT_PUBLIC_HERO_VARIANT=collage` for the alternative.
 
+## Verification
+
+All workspace type checks and production builds pass. The 23 regression tests cover critical permissions, workflow and concurrency boundaries. Production dependency audit is clean; the Linux API container builds and passes a database health smoke test. See `tasks/implementation/AURA-010.md` for browser evidence and limits.
+
 ## Release boundary
 
 Local implementation is separate from production deployment. Actual inventory/photos/plans and reviewed translations, agency contact/privacy copy, domain/Cloudflare access and email/SMS/translation/FX/storage providers must be supplied/validated before launch. Development OTP/email responses are explicitly local; production fails closed without providers. No live messages, hosting purchases or deployments have been performed. See `apps/api/README.md` and `docs/architecture/stack.md`.
