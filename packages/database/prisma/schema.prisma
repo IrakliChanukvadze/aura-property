@@ -1,0 +1,274 @@
+generator client {
+ provider = "prisma-client-js"
+}
+datasource db {
+ provider = "postgresql"
+ url = env("DATABASE_URL")
+}
+model User {
+ id String @id @default(cuid())
+ email String @unique
+ name String
+ passwordHash String?
+ role String @default("AGENT")
+ teamId String?
+ active Boolean @default(true)
+ contentEdit Boolean @default(false)
+ locale String @default("en")
+ agentRate Decimal @default(1) @db.Decimal(8,4)
+ leadRate Decimal @default(0.5) @db.Decimal(8,4)
+ lastAssignedAt DateTime?
+ joinedAt DateTime @default(now())
+ publicProfile Boolean @default(false)
+ publicData Json @default("{}")
+ createdAt DateTime @default(now())
+ sessions Session[]
+}
+model Session {
+ id String @id
+ userId String
+ user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+ expiresAt DateTime
+}
+model Token {
+ id String @id @default(cuid())
+ hash String @unique
+ userId String
+ kind String
+ expiresAt DateTime
+ usedAt DateTime?
+}
+model Team {
+ id String @id @default(cuid())
+ name String
+ leadId String @unique
+ active Boolean @default(true)
+ lastAssignedAt DateTime?
+}
+model Project {
+ id String @id @default(cuid())
+ slug String @unique
+ city String
+ coverImage String
+ constructionStatus String @default("ONGOING")
+ published Boolean @default(false)
+ translations Json @default("{}")
+ buildings Json @default("[]")
+ createdAt DateTime @default(now())
+ updatedAt DateTime @updatedAt
+ units Unit[]
+}
+model Unit {
+ id String @id @default(cuid())
+ projectId String
+ project Project @relation(fields:[projectId],references:[id],onDelete:Restrict)
+ buildingId String
+ floorId String
+ number String
+ area Decimal @db.Decimal(12,2)
+ bedrooms Int
+ polygon Json
+ status String @default("AVAILABLE")
+ price Decimal @db.Decimal(16,2)
+ priceCurrency String @default("USD")
+ priceMode String @default("TOTAL")
+ showPrice Boolean @default(true)
+ minimumPrice Decimal? @db.Decimal(16,2)
+ minimumCurrency String?
+}
+model Post {
+ id String @id @default(cuid())
+ slug String @unique
+ coverImage String?
+ translations Json @default("{}")
+ published Boolean @default(false)
+ publishedAt DateTime?
+ updatedAt DateTime @updatedAt
+}
+model Customer {
+ id String @id @default(cuid())
+ name String
+ phone String @unique
+ email String?
+ nationality String @default("Unknown")
+ language String @default("en")
+ createdAt DateTime @default(now())
+ leads Lead[]
+}
+model Lead {
+ id String @id @default(cuid())
+ customerId String
+ customer Customer @relation(fields:[customerId],references:[id],onDelete:Restrict)
+ teamId String?
+ agentId String?
+ stage String @default("NEW")
+ source String
+ inquiryProjectId String?
+ inquiryUnitId String?
+ projectIds String[] @default([])
+ budgetMin Decimal? @db.Decimal(16,2)
+ budgetMax Decimal? @db.Decimal(16,2)
+ budgetCurrency String @default("USD")
+ answered Boolean @default(false)
+ unanswered Int @default(0)
+ lostReview Boolean @default(false)
+ previousStage String?
+ createdAt DateTime @default(now())
+ updatedAt DateTime @updatedAt
+ events Event[]
+ sales Sale[]
+ reminders Reminder[]
+ reservations Reservation[]
+ viewingAt DateTime?
+ viewingLocation String?
+ @@index([teamId,stage])
+ @@index([agentId,stage])
+}
+model Event {
+ id String @id @default(cuid())
+ leadId String
+ lead Lead @relation(fields:[leadId],references:[id],onDelete:Cascade)
+ actorId String?
+ type String
+ data Json
+ createdAt DateTime @default(now())
+}
+model Comment {
+ id String @id @default(cuid())
+ leadId String
+ actorId String
+ text String
+ versions Json @default("[]")
+ deleted Boolean @default(false)
+ createdAt DateTime @default(now())
+ updatedAt DateTime @updatedAt
+}
+model Sale {
+ id String @id @default(cuid())
+ leadId String
+ lead Lead @relation(fields:[leadId],references:[id],onDelete:Restrict)
+ unitId String
+ activeUnitId String? @unique
+ agentId String?
+ teamId String?
+ leadUserId String?
+ actingUserId String?
+ agentRate Decimal @default(1) @db.Decimal(8,4)
+ leadRate Decimal @default(0.5) @db.Decimal(8,4)
+ actingRate Decimal @default(0) @db.Decimal(8,4)
+ price Decimal @db.Decimal(16,2)
+ currency String
+ gelRate Decimal @db.Decimal(16,6)
+ gelTotal Decimal @db.Decimal(16,2)
+ agentAmount Decimal @db.Decimal(16,2)
+ leadAmount Decimal @db.Decimal(16,2)
+ actingAmount Decimal @default(0) @db.Decimal(16,2)
+ deposit Decimal @db.Decimal(16,2)
+ depositCurrency String
+ depositDate DateTime
+ signedAt DateTime
+ reversedAt DateTime?
+ documents Json @default("[]")
+ createdAt DateTime @default(now())
+}
+model Reminder {
+ id String @id @default(cuid())
+ leadId String
+ lead Lead @relation(fields:[leadId],references:[id],onDelete:Cascade)
+ userId String
+ kind String
+ dueAt DateTime
+ text String
+ state String @default("PENDING")
+ @@index([state,dueAt])
+}
+model Notification {
+ id String @id @default(cuid())
+ userId String
+ kind String
+ text String
+ leadId String?
+ readAt DateTime?
+ createdAt DateTime @default(now())
+}
+model Reservation {
+ id String @id @default(cuid())
+ leadId String
+ lead Lead @relation(fields:[leadId],references:[id],onDelete:Cascade)
+ unitId String
+ activeUnitId String? @unique
+ nextReviewAt DateTime
+ missed Int @default(0)
+ escalated Boolean @default(false)
+ releasedAt DateTime?
+ createdAt DateTime @default(now())
+}
+model Leave {
+ id String @id @default(cuid())
+ userId String
+ teamId String?
+ startsAt DateTime
+ endsAt DateTime
+ days Int
+ workingDates Json @default("[]")
+ status String @default("PENDING")
+ actingUserId String?
+ actingRate Decimal @default(0.25) @db.Decimal(8,4)
+ reassign Json @default("[]")
+ approvedBy String?
+ cancellationRequested Boolean @default(false)
+ returnAt DateTime?
+ requestedReturnAt DateTime?
+ createdAt DateTime @default(now())
+}
+model Schedule {
+ id String @id @default(cuid())
+ userId String
+ weekdays Int[]
+ exceptions Json @default("{}")
+ approved Boolean @default(false)
+ createdBy String
+ updatedAt DateTime @updatedAt
+ @@unique([userId])
+}
+model FxRate {
+ date String @id
+ usdGel Decimal @db.Decimal(16,6)
+ source String
+}
+model InquiryPending {
+ id String @id @default(cuid())
+ phone String
+ payload Json
+ otpHash String
+ attempts Int @default(0)
+ expiresAt DateTime
+}
+model Audit {
+ id String @id @default(cuid())
+ actorId String?
+ action String
+ data Json
+ createdAt DateTime @default(now())
+}
+
+model Media {
+ id String @id @default(cuid())
+ ownerId String
+ leadId String?
+ purpose String
+ name String
+ mime String
+ size Int
+ path String
+ createdAt DateTime @default(now())
+}
+
+model CommissionRate {
+ id String @id @default(cuid())
+ userId String
+ agentRate Decimal @db.Decimal(8,4)
+ leadRate Decimal @db.Decimal(8,4)
+ effectiveAt DateTime
+ @@index([userId,effectiveAt])
+}
