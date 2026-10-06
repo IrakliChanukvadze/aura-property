@@ -1,0 +1,3 @@
+# AURA-007 — Operational integration corrections
+
+Owner-editable agency commission defaults with migration/history, default acting share from half configured lead rate, owner historical FX entry, direct private R2 adapter, readable import preview/timeline/sale summary, optional-budget handling, import assignment choice, focused keyboard dialogs, acting-lead member selection/login and transaction-state checks for Lost review/reopen/delete.18 tests pass against local PostgreSQL including real Excel parsing/import and default-rate authorization. R2 credentialed test remains external; no live email/SMS/storage deployment claimed.

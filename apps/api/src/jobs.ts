@@ -25,7 +25,13 @@ export async function runJobs() {
       where: { releasedAt: null, nextReviewAt: { lte: now } },
       include: { lead: true },
     });
-    for (const r of reservations) {
+    for (const initial of reservations) {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${initial.unitId}))`;
+      const r = await tx.reservation.findUniqueOrThrow({
+        where: { id: initial.id },
+        include: { lead: true },
+      });
+      if (r.releasedAt || r.nextReviewAt > now) continue;
       const team = r.lead.teamId
         ? await tx.team.findUnique({ where: { id: r.lead.teamId } })
         : null;
@@ -75,6 +81,7 @@ export async function runJobs() {
       const plans = l.reassign as any[];
       if (!plans.length) continue;
       for (const p of plans) {
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${p.leadId}))`;
         const lead = await tx.lead.findUnique({ where: { id: p.leadId } });
         if (
           !lead ||

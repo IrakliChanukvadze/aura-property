@@ -717,7 +717,7 @@ export function Personnel({ user }: { user: any }) {
                 },
                 {
                   name: "moveLeadIds",
-                  label: t("Active lead IDs to move with team transfer"),
+                  label: t("Active leads to transfer"),
                   multiple: true,
                   options: activeLeads
                     .filter((l) => l.agentId === selected.id)
@@ -782,6 +782,13 @@ export function Settings({
   refresh: () => void;
 }) {
   const [message, setMessage] = useState("");
+  const [defaults, setDefaults] = useState<any>(null);
+  useEffect(() => {
+    if (user.role === "SUPER_ADMIN")
+      api("/settings")
+        .then(setDefaults)
+        .catch((e) => setMessage(e.message));
+  }, [user.role]);
   return (
     <div className="settings-grid">
       <section className="panel">
@@ -827,6 +834,76 @@ export function Settings({
           }}
         />
       </section>
+      {user.role === "SUPER_ADMIN" && defaults && (
+        <section className="panel">
+          <h2>{t("Default commission rates")}</h2>
+          <p className="muted">
+            {t(
+              "Defaults apply to new staff and new acting assignments. Historical earnings stay unchanged.",
+            )}
+          </p>
+          <Form
+            fields={[
+              {
+                name: "defaultAgentRate",
+                label: t("Default agent percentage"),
+                type: "number",
+                required: true,
+                value: Number(defaults.defaultAgentRate),
+              },
+              {
+                name: "defaultLeadRate",
+                label: t("Default team lead percentage"),
+                type: "number",
+                required: true,
+                value: Number(defaults.defaultLeadRate),
+              },
+            ]}
+            onSubmit={async (values) => {
+              const updated = await api("/settings", "PATCH", {
+                defaultAgentRate: Number(values.defaultAgentRate),
+                defaultLeadRate: Number(values.defaultLeadRate),
+              });
+              setDefaults(updated);
+              setMessage(t("Preferences saved"));
+            }}
+          />
+        </section>
+      )}
+      {user.role === "SUPER_ADMIN" && (
+        <section className="panel">
+          <h2>{t("USD to GEL exchange rate")}</h2>
+          <p className="muted">
+            {t(
+              "Record a verified rate for the signing date. Saved sales keep their original conversion.",
+            )}
+          </p>
+          <Form
+            fields={[
+              {
+                name: "date",
+                label: t("Rate date"),
+                type: "date",
+                required: true,
+              },
+              {
+                name: "usdGel",
+                label: t("GEL per USD"),
+                type: "number",
+                required: true,
+              },
+              { name: "source", label: t("Rate source"), required: true },
+            ]}
+            onSubmit={async (values) => {
+              await api("/fx", "POST", {
+                ...values,
+                usdGel: Number(values.usdGel),
+              });
+              setMessage(t("Preferences saved"));
+            }}
+          />
+        </section>
+      )}
       {message && <p role="status">{message}</p>}
     </div>
   );

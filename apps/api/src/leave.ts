@@ -1,3 +1,4 @@
+import { agencySettings } from "./settings.js";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { db, ApiError, requireAdmin, acting } from "./db.js";
@@ -304,6 +305,7 @@ export async function leaveRoutes(app: FastifyInstance) {
             "NO_WORKDAYS",
             "No scheduled working days selected",
           );
+        const defaults = await agencySettings(tx);
         const result = await tx.leave.create({
           data: {
             ...b,
@@ -313,6 +315,7 @@ export async function leaveRoutes(app: FastifyInstance) {
             teamId: target.teamId,
             days: dates.length,
             workingDates: dates,
+            actingRate: Number(defaults.defaultLeadRate) / 2,
           },
         });
         const team = target.teamId

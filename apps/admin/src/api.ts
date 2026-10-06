@@ -50,6 +50,11 @@ export async function download(path: string, name: string) {
 export function mediaUrl(url: string, privatePreview = false) {
   if (!url) return "";
   const origin = base.replace(/\/api\/?$/, "");
+  if (url.startsWith("/images/") || url === "/preview-plan.svg")
+    return (
+      ((import.meta as unknown as { env: Record<string, string> }).env
+        .VITE_PUBLIC_URL || "http://localhost:3100") + url
+    );
   return url.startsWith("/api/")
     ? origin +
         (privatePreview ? url.replace("/public/media/", "/uploads/") : url)

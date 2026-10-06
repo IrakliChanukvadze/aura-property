@@ -331,6 +331,16 @@ export async function crmRoutes(app: FastifyInstance) {
         throw new ApiError(400, "INVALID_STATE", "Not Lost");
       return {
         data: await db.$transaction(async (tx) => {
+          await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${l.id}))`;
+          const current = await tx.lead.findUniqueOrThrow({
+            where: { id: l.id },
+          });
+          if (current.stage !== "LOST" || !current.lostReview)
+            throw new ApiError(
+              409,
+              "REVIEW_CHANGED",
+              "This Lost review has already changed",
+            );
           const result = await tx.lead.update({
             where: { id: l.id },
             data: {
@@ -360,6 +370,16 @@ export async function crmRoutes(app: FastifyInstance) {
         );
       return {
         data: await db.$transaction(async (tx) => {
+          await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${l.id}))`;
+          const current = await tx.lead.findUniqueOrThrow({
+            where: { id: l.id },
+          });
+          if (current.stage !== "LOST" || current.lostReview)
+            throw new ApiError(
+              409,
+              "REVIEW_CHANGED",
+              "Confirmed Lost record required",
+            );
           await event(tx, l.id, req.actor.id, "REOPEN", {});
           return tx.lead.update({
             where: { id: l.id },
@@ -381,6 +401,17 @@ export async function crmRoutes(app: FastifyInstance) {
     if (await db.sale.count({ where: { leadId: l.id, reversedAt: null } }))
       throw new ApiError(400, "HAS_SALES", "Lead has completed purchases");
     await db.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${l.id}))`;
+      const current = await tx.lead.findUniqueOrThrow({ where: { id: l.id } });
+      if (
+        current.stage !== "LOST" ||
+        (await tx.sale.count({ where: { leadId: l.id, reversedAt: null } }))
+      )
+        throw new ApiError(
+          409,
+          "STATE_CHANGED",
+          "Only Lost records without completed purchases may be deleted",
+        );
       await tx.audit.create({
         data: {
           actorId: req.actor.id,

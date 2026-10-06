@@ -207,8 +207,7 @@ export default function App() {
         </section>
       </main>
     );
-  const content =
-    user.role === "SUPER_ADMIN" || user.role === "EDITOR" || user.contentEdit;
+  const content = user.role === "SUPER_ADMIN" || user.contentEdit;
   return (
     <div className="workspace">
       <aside className={menu ? "open" : ""}>

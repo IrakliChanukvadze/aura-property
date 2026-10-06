@@ -1,6 +1,6 @@
 import { t } from "./i18n";
 import { api } from "./api";
-import { useState, type ReactNode } from "react";
+import { useState, useRef, useEffect, type ReactNode } from "react";
 export function Modal({
   title,
   children,
@@ -10,10 +10,45 @@ export function Modal({
   children: ReactNode;
   onClose: () => void;
 }) {
+  const panel = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const previous = document.activeElement as HTMLElement | null;
+    const focusable = () =>
+      Array.from(
+        panel.current?.querySelectorAll<HTMLElement>(
+          'button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), a[href], [tabindex="0"]',
+        ) || [],
+      ).filter((e) => e.getClientRects().length);
+    focusable()[0]?.focus();
+    const key = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose();
+      }
+      if (e.key === "Tab") {
+        const items = focusable();
+        const first = items[0],
+          last = items[items.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last?.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first?.focus();
+        }
+      }
+    };
+    document.addEventListener("keydown", key);
+    return () => {
+      document.removeEventListener("keydown", key);
+      previous?.focus();
+    };
+  }, [onClose]);
   return (
     <div className="scrim" onClick={onClose}>
       <section
         className="modal"
+        ref={panel}
         role="dialog"
         aria-modal="true"
         aria-label={title}

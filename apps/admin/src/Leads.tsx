@@ -26,6 +26,30 @@ const title = (s: string) =>
       .toLowerCase()
       .replace(/^./, (x) => x.toUpperCase()),
   );
+function timelineText(event: any, agents: any[], projects: any[]) {
+  const data = event.payload || event.data || {};
+  if (data.comment || data.text || data.message)
+    return data.comment || data.text || data.message;
+  if (event.type === "ASSIGNED")
+    return `${t("Agent")}: ${agents.find((a) => a.id === data.to)?.name || t("Team lead")}`;
+  if (event.type === "INQUIRY") {
+    const project = projects.find((p) => p.id === data.originalProject);
+    return [
+      project?.translations?.en?.title,
+      data.apartmentSizes?.length
+        ? `${t("Area")}: ${data.apartmentSizes.join(", ")} m²`
+        : null,
+      data.minFloor != null || data.maxFloor != null
+        ? `${t("Floor")}: ${data.minFloor ?? "—"}–${data.maxFloor ?? "—"}`
+        : null,
+    ]
+      .filter(Boolean)
+      .join(" · ");
+  }
+  if (data.stage || data.toStage) return title(data.stage || data.toStage);
+  if (data.dueAt) return new Date(data.dueAt).toLocaleString();
+  return "";
+}
 const contactFields: Field[] = [
   { name: "name", label: t("Customer name"), required: true },
   { name: "phone", label: t("Phone"), type: "tel", required: true },
@@ -53,8 +77,17 @@ const normalize = (v: any) => ({
   )
     .map((x: string) => x.trim())
     .filter(Boolean),
-  budgetMin: v.budgetMin ? Number(v.budgetMin) : null,
-  budgetMax: v.budgetMax ? Number(v.budgetMax) : null,
+  budgetMin:
+    v.budgetMin !== undefined && v.budgetMin !== ""
+      ? Number(v.budgetMin)
+      : undefined,
+  budgetMax:
+    v.budgetMax !== undefined && v.budgetMax !== ""
+      ? Number(v.budgetMax)
+      : undefined,
+  ...(v.autoAssign !== undefined
+    ? { autoAssign: v.autoAssign === true || v.autoAssign === "true" }
+    : {}),
 });
 export function Leads({
   mode,
@@ -101,6 +134,7 @@ export function Leads({
     [from, setFrom] = useState(""),
     [to, setTo] = useState(""),
     [preview, setPreview] = useState<any>(null),
+    [autoImport, setAutoImport] = useState(false),
     [busy, setBusy] = useState(false);
   const load = () =>
     api<any[]>(
@@ -325,19 +359,37 @@ export function Leads({
       {dialog === "create" && (
         <Modal title={t("New lead")} onClose={() => setDialog("")}>
           <Form
-            fields={contactFields.map((f) =>
-              f.name === "projectIds"
-                ? {
-                    ...f,
-                    label: t("Projects of interest"),
-                    multiple: true,
-                    options: projects.map((p) => ({
-                      value: p.id,
-                      label: p.translations?.en?.title || p.slug,
-                    })),
-                  }
-                : f,
-            )}
+            fields={contactFields
+              .map((f) =>
+                f.name === "projectIds"
+                  ? {
+                      ...f,
+                      label: t("Projects of interest"),
+                      multiple: true,
+                      options: projects.map((p) => ({
+                        value: p.id,
+                        label: p.translations?.en?.title || p.slug,
+                      })),
+                    }
+                  : f,
+              )
+              .concat(
+                user.role !== "AGENT"
+                  ? [
+                      {
+                        name: "autoAssign",
+                        label: t("Assignment"),
+                        options: [
+                          { value: "false", label: t("Assign manually") },
+                          {
+                            value: "true",
+                            label: t("Distribute automatically within team"),
+                          },
+                        ],
+                      },
+                    ]
+                  : [],
+              )}
             onSubmit={async (v) => {
               await api("/leads", "POST", normalize(v));
               await changed();
@@ -390,13 +442,51 @@ export function Leads({
           />
           {preview && (
             <>
-              <pre>{JSON.stringify(preview, null, 2)}</pre>
+              <p>
+                {t("Valid rows")}: {preview.valid} · {t("Skipped rows")}:{" "}
+                {preview.skipped}
+              </p>
+              <div className="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>{t("Row")}</th>
+                      <th>{t("Customer name")}</th>
+                      <th>{t("Phone")}</th>
+                      <th>{t("Status")}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {preview.rows.map((row: any) => (
+                      <tr key={row.row}>
+                        <td>{row.row}</td>
+                        <td>{row.name}</td>
+                        <td dir="ltr">{row.phone}</td>
+                        <td>
+                          {row.valid ? t("Ready to import") : t(row.error)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {user.role !== "AGENT" && (
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={autoImport}
+                    onChange={(e) => setAutoImport(e.target.checked)}
+                  />
+                  {t("Distribute automatically within team")}
+                </label>
+              )}
               <button
                 className="primary"
                 onClick={async () => {
                   try {
                     await api("/leads/import/confirm", "POST", {
                       previewId: preview.id || preview.previewId,
+                      autoAssign: autoImport,
                     });
                     setPreview(null);
                     await changed();
@@ -738,7 +828,7 @@ export function Leads({
                   {event.text ||
                     event.comment ||
                     event.message ||
-                    JSON.stringify(event.payload || event.data || {})}
+                    timelineText(event, agents, projects)}
                 </p>
               </article>
             ))}
@@ -748,8 +838,11 @@ export function Leads({
               <h3>{t("Apartment sales")}</h3>
               {selected.sales.map((s: any) => (
                 <article className="sale-row" key={s.id}>
-                  <strong>{s.unitId}</strong>
-                  <Money value={s.priceGel || s.price} />
+                  <strong>
+                    {unitOptions.find((u) => u.value === s.unitId)?.label ||
+                      `${t("Apartment")} #${units.find((u) => u.id === s.unitId)?.number || s.unitId}`}
+                  </strong>
+                  <Money value={s.gelTotal} />
                   {user.role === "SUPER_ADMIN" && (
                     <button
                       onClick={async () => {
@@ -795,8 +888,26 @@ function SaleForm({
       <dl>
         {Object.entries(summary).map(([k, v]) => (
           <div key={k}>
-            <dt>{title(k)}</dt>
-            <dd>{String(v)}</dd>
+            <dt>
+              {t(
+                (
+                  {
+                    unitId: "Apartment",
+                    price: "Actual signed sale price",
+                    currency: "Sale currency",
+                    signedAt: "Contract signing date",
+                    deposit: "First deposit received",
+                    depositCurrency: "Deposit currency",
+                    depositDate: "Deposit received date",
+                  } as Record<string, string>
+                )[k] || title(k),
+              )}
+            </dt>
+            <dd>
+              {k === "unitId"
+                ? unitOptions.find((u) => u.value === v)?.label
+                : String(v)}
+            </dd>
           </div>
         ))}
       </dl>

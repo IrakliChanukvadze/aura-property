@@ -25,6 +25,7 @@ async function account(role: string, teamId: string | null = null) {
     },
   });
   const login = await app.inject({
+    remoteAddress: `127.0.1.${users.length}`,
     method: "POST",
     url: "/api/auth/login",
     payload: { email: u.email, password: "Test-password-long!" },
@@ -422,4 +423,92 @@ test("reporting boundaries use calendar month and year in Tbilisi independent of
   const year = periodBounds("2026-10", true);
   assert.equal(year.start.toISOString(), "2025-12-31T20:00:00.000Z");
   assert.equal(year.end.toISOString(), "2026-12-31T20:00:00.000Z");
+});
+
+test("only owner changes agency defaults and new-user rates do not mutate existing earnings", async () => {
+  const owner = await account("SUPER_ADMIN");
+  const agent = await account("AGENT");
+  const before = (await request(owner, "GET", "/api/settings")).json().data;
+  assert.equal(
+    (
+      await request(agent, "PATCH", "/api/settings", {
+        defaultAgentRate: 2,
+        defaultLeadRate: 0.8,
+      })
+    ).statusCode,
+    403,
+  );
+  try {
+    assert.equal(
+      (
+        await request(owner, "PATCH", "/api/settings", {
+          defaultAgentRate: 1.2,
+          defaultLeadRate: 0.6,
+        })
+      ).statusCode,
+      200,
+    );
+    const email = `${prefix}-defaults@example.test`;
+    const created = await request(owner, "POST", "/api/users", {
+      name: "Defaults preview",
+      email,
+      role: "EDITOR",
+    });
+    assert.equal(created.statusCode, 200);
+    users.push(created.json().data.id);
+    const saved = await db.user.findUniqueOrThrow({ where: { email } });
+    assert.equal(Number(saved.agentRate), 1.2);
+    assert.equal(Number(saved.leadRate), 0.6);
+    const unchanged = await db.user.findUniqueOrThrow({
+      where: { id: agent.u.id },
+    });
+    assert.equal(Number(unchanged.agentRate), 1);
+  } finally {
+    await request(owner, "PATCH", "/api/settings", {
+      defaultAgentRate: Number(before.defaultAgentRate),
+      defaultLeadRate: Number(before.defaultLeadRate),
+    });
+  }
+});
+
+test("Excel template preview flags duplicates and imports only valid rows to agent", async () => {
+  const { default: ExcelJS } = await import("exceljs");
+  const agent = await account("AGENT");
+  const template = await request(agent, "GET", "/api/leads/import/template");
+  assert.equal(template.statusCode, 200);
+  const book = new ExcelJS.Workbook();
+  await book.xlsx.load(template.rawPayload as any);
+  const sheet = book.worksheets[0];
+  sheet.spliceRows(2, 1);
+  const p = `+1555${Math.floor(Math.random() * 9000000 + 1000000)}`;
+  sheet.addRow(["Import preview", p, "", "Unknown", "en", ""]);
+  sheet.addRow(["Duplicate preview", p, "", "Unknown", "en", ""]);
+  sheet.addRow(["Invalid preview", "abc", "", "Unknown", "en", ""]);
+  const file = Buffer.from(await book.xlsx.writeBuffer()).toString("base64");
+  const preview = await request(agent, "POST", "/api/leads/import/preview", {
+    file,
+  });
+  assert.equal(preview.statusCode, 200);
+  assert.equal(preview.json().data.valid, 1);
+  assert.equal(preview.json().data.skipped, 2);
+  const confirmed = await request(agent, "POST", "/api/leads/import/confirm", {
+    previewId: preview.json().data.previewId,
+  });
+  assert.equal(confirmed.statusCode, 200);
+  assert.equal(confirmed.json().data.imported, 1);
+  const customer = await db.customer.findUniqueOrThrow({ where: { phone: p } });
+  customerIds.push(customer.id);
+  const lead = await db.lead.findFirstOrThrow({
+    where: { customerId: customer.id },
+  });
+  assert.equal(lead.agentId, agent.u.id);
+  assert.equal(lead.stage, "NEW");
+  assert.equal(
+    (
+      await request(agent, "POST", "/api/leads/import/confirm", {
+        previewId: preview.json().data.previewId,
+      })
+    ).statusCode,
+    400,
+  );
 });

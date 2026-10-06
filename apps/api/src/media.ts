@@ -1,3 +1,4 @@
+import { r2Configured, r2Put, r2Get } from "./storage.js";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { randomUUID } from "node:crypto";
@@ -70,7 +71,10 @@ export async function mediaRoutes(app: FastifyInstance) {
         );
       const key = `${randomUUID()}.${formats[b.mime].ext}`;
       let path: string;
-      if (process.env.STORAGE_WEBHOOK_URL) {
+      if (r2Configured()) {
+        await r2Put(key, bytes, b.mime);
+        path = key;
+      } else if (process.env.STORAGE_WEBHOOK_URL) {
         const result = await fetch(process.env.STORAGE_WEBHOOK_URL, {
           method: "POST",
           headers: {
@@ -135,6 +139,7 @@ export async function mediaRoutes(app: FastifyInstance) {
         `inline; filename="${item.name.replace(/[^a-zA-Z0-9._-]/g, "_")}"`,
       )
       .header("cache-control", "private, no-store");
+    if (r2Configured()) return reply.send(await r2Get(item.path));
     if (process.env.STORAGE_WEBHOOK_URL) {
       const res = await fetch(
         `${process.env.STORAGE_WEBHOOK_URL}?key=${encodeURIComponent(item.path)}`,

@@ -109,7 +109,7 @@ export async function importRoutes(app: FastifyInstance) {
         } catch {
           error = "Invalid phone";
         }
-        seen.add(p);
+        if (!error) seen.add(p);
         const value = { ...r, phone: p };
         rows.push({ row: i + 2, ...value, valid: !error, error });
         if (!error) valid.push(value);

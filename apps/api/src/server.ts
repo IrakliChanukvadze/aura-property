@@ -12,6 +12,7 @@ import { reportingRoutes } from "./reporting.js";
 import { leaveRoutes } from "./leave.js";
 import { importRoutes } from "./imports.js";
 import { mediaRoutes } from "./media.js";
+import { settingsRoutes } from "./settings.js";
 import { runJobs } from "./jobs.js";
 export async function buildApp() {
   const app = Fastify({ logger: true, bodyLimit: 5242880 });
@@ -26,6 +27,7 @@ export async function buildApp() {
   await app.register(rateLimit, { max: 200, timeWindow: "1 minute" });
   app.addHook("onRequest", async (req, reply) => {
     reply.header("x-content-type-options", "nosniff");
+    reply.header("x-robots-tag", "noindex, nofollow");
     if (
       !["GET", "HEAD", "OPTIONS"].includes(req.method) &&
       req.cookies.aura_session
@@ -45,37 +47,50 @@ export async function buildApp() {
         .status(err.status)
         .send({ error: { code: err.code, message: err.message } });
     if (err instanceof ZodError)
-      return reply
-        .status(400)
-        .send({
-          error: {
-            code: "VALIDATION",
-            message: err.issues
-              .map((i) => `${i.path.join(".")}: ${i.message}`)
-              .join(";"),
-          },
-        });
-    if ((err as any).code === "P2002")
-      return reply
-        .status(409)
-        .send({
-          error: {
-            code: "CONFLICT",
-            message: "Record conflicts with existing data",
-          },
-        });
-    req.log.error(err);
-    return reply
-      .status(500)
-      .send({
-        error: { code: "INTERNAL", message: "Request could not be completed" },
+      return reply.status(400).send({
+        error: {
+          code: "VALIDATION",
+          message: err.issues
+            .map((i) => `${i.path.join(".")}: ${i.message}`)
+            .join(";"),
+        },
       });
+    if ((err as any).code === "P2002")
+      return reply.status(409).send({
+        error: {
+          code: "CONFLICT",
+          message: "Record conflicts with existing data",
+        },
+      });
+    if (
+      typeof (err as any).statusCode === "number" &&
+      (err as any).statusCode >= 400 &&
+      (err as any).statusCode < 500
+    ) {
+      const status = (err as any).statusCode;
+      return reply
+        .status(status)
+        .send({
+          error: {
+            code: status === 429 ? "RATE_LIMIT" : "BAD_REQUEST",
+            message:
+              status === 429
+                ? "Too many requests. Please try again later."
+                : "Request could not be accepted",
+          },
+        });
+    }
+    req.log.error(err);
+    return reply.status(500).send({
+      error: { code: "INTERNAL", message: "Request could not be completed" },
+    });
   });
   app.get("/api/health", async () => {
     await db.$queryRaw`SELECT 1`;
     return { data: { status: "ok" } };
   });
   await authRoutes(app);
+  await settingsRoutes(app);
   await contentRoutes(app);
   await inquiryRoutes(app);
   await crmRoutes(app);

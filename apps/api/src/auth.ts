@@ -1,4 +1,5 @@
 import type { FastifyInstance } from "fastify";
+import { agencySettings } from "./settings.js";
 import { randomBytes } from "node:crypto";
 import { z } from "zod";
 import {
@@ -77,7 +78,7 @@ export async function authRoutes(app: FastifyInstance) {
         path: "/",
         maxAge: 86400,
       });
-      return { data: safe(u) };
+      return { data: { ...safe(u), actingLead: await acting(u) } };
     },
   );
   app.get("/api/auth/me", { preHandler: authenticate }, async (req) => ({
@@ -168,7 +169,7 @@ export async function authRoutes(app: FastifyInstance) {
       where:
         u.role === "SUPER_ADMIN"
           ? {}
-          : u.role === "TEAM_LEAD"
+          : u.role === "TEAM_LEAD" || (await acting(u))
             ? { teamId: u.teamId, active: true }
             : { id: u.id, active: true },
     });
@@ -204,9 +205,12 @@ export async function authRoutes(app: FastifyInstance) {
       (b.role !== "AGENT" || b.contentEdit)
     )
       throw new ApiError(403, "FORBIDDEN", "Team leads may create agents only");
+    const defaults = await agencySettings();
     const u = await db.user.create({
       data: {
         ...b,
+        agentRate: defaults.defaultAgentRate,
+        leadRate: defaults.defaultLeadRate,
         email: b.email.toLowerCase(),
         teamId: req.actor.role === "SUPER_ADMIN" ? b.teamId : req.actor.teamId,
       },
