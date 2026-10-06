@@ -6,15 +6,18 @@
     "packages/*"
   ],
   "scripts": {
-    "dev:web": "npm run dev -w @aura/web",
-    "dev:api": "npm run dev -w @aura/api",
-    "dev:admin": "npm run dev -w @aura/admin",
+    "dev:web": "node scripts/env.mjs npm exec -w @aura/web -- next dev -p 3100",
+    "dev:api": "node scripts/env.mjs npm run dev -w @aura/api",
+    "dev:admin": "node scripts/env.mjs npm run dev -w @aura/admin",
     "build": "npm run build --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "test": "npm run test --workspaces --if-present",
-    "db:generate": "npm run generate -w @aura/database",
-    "db:migrate": "npm run migrate -w @aura/database",
-    "db:seed": "npm run seed -w @aura/database"
+    "test": "node scripts/env.mjs npm run test --workspaces --if-present",
+    "db:generate": "node scripts/env.mjs npm run generate -w @aura/database",
+    "db:migrate": "node scripts/env.mjs npm run migrate -w @aura/database",
+    "db:seed": "node scripts/env.mjs npm run seed -w @aura/database",
+    "dev": "node scripts/dev.mjs",
+    "setup": "node scripts/setup.mjs",
+    "format": "prettier --write apps packages scripts docs tasks"
   },
   "engines": {
     "node": ">=22"
