@@ -1,3 +1,4 @@
+import { publicSite } from "@/lib/api";
 import { notFound } from "next/navigation";
 import { isLocale, t } from "@/lib/i18n";
 import { metadata } from "@/lib/seo";
@@ -18,7 +19,8 @@ export default async function Page({
 }) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
-  const d = t(locale);
+  const site = await publicSite();
+  const d = { ...t(locale), ...site.translations?.[locale] };
   const team = await publicTeam();
   return (
     <>

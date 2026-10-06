@@ -1,3 +1,4 @@
+import { publicSite } from "@/lib/api";
 import Link from "next/link";
 import {
   ArrowUpRight,
@@ -31,15 +32,18 @@ export default async function Page({
   const { locale: raw } = await params;
   if (!isLocale(raw)) notFound();
   const locale: Locale = raw;
-  const d = t(locale);
+  const site = await publicSite();
+  const d = { ...t(locale), ...site.translations?.[locale] };
   const [collection, articles] = await Promise.all([projects(), posts()]);
-  const collage = process.env.NEXT_PUBLIC_HERO_VARIANT === "collage";
+  const collage = site.heroVariant
+    ? site.heroVariant === "collage"
+    : process.env.NEXT_PUBLIC_HERO_VARIANT === "collage";
   return (
     <>
       <section className={`hero ${collage ? "collage" : ""}`}>
         <div className="hero-image">
           <img
-            src={imageCity}
+            src={site.heroImage || imageCity}
             alt="Illustrative Georgian city architecture"
             fetchPriority="high"
           />

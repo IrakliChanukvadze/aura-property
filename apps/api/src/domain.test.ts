@@ -51,3 +51,32 @@ test("joining-day accrual clamps month ends and preserves original anniversary",
   assert.equal(accrued(new Date("2024-01-31"), new Date("2024-02-29")), 2);
   assert.equal(accrued(new Date("2026-12-01"), new Date("2026-10-06")), 0);
 });
+
+test("complex price hiding omits all unit prices and private floors from public data", async () => {
+  const { publicProject } = await import("./content.js");
+  const result = publicProject({
+    id: "preview",
+    showPrices: false,
+    buildings: [{ id: "b", floors: [{ id: "f" }] }],
+    units: [
+      {
+        id: "u",
+        buildingId: "b",
+        floorId: "f",
+        status: "AVAILABLE",
+        area: 60,
+        price: 100000,
+        priceMode: "TOTAL",
+        priceCurrency: "USD",
+        showPrice: true,
+        minimumPrice: 80000,
+        minimumCurrency: "USD",
+      },
+    ],
+  });
+  const unit = result.buildings[0].floors[0].units[0];
+  assert.equal(unit.price, null);
+  assert.equal(unit.showPrice, false);
+  assert.equal(unit.minimumPrice, undefined);
+  assert.equal(result.startingPrice, null);
+});

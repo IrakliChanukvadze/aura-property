@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { db, requireAdmin } from "./db.js";
+import { db, requireAdmin, content } from "./db.js";
 import { authenticate } from "./auth.js";
 export async function agencySettings(tx: any = db) {
   return (
@@ -11,6 +11,42 @@ export async function agencySettings(tx: any = db) {
   );
 }
 export async function settingsRoutes(app: FastifyInstance) {
+  app.get("/api/public/site", async () => ({
+    data: (await agencySettings()).siteContent || {},
+  }));
+  app.get("/api/site", { preHandler: authenticate }, async (req) => {
+    content(req.actor);
+    return { data: (await agencySettings()).siteContent || {} };
+  });
+  app.patch("/api/site", { preHandler: authenticate }, async (req) => {
+    content(req.actor);
+    const values = z
+      .object({
+        phone: z.string().max(100).optional(),
+        whatsapp: z.string().max(100).optional(),
+        email: z.string().email().optional().or(z.literal("")),
+        heroImage: z.string().max(2000).optional(),
+        heroVariant: z.enum(["cityscape", "collage"]).optional(),
+        translations: z
+          .record(
+            z.enum(["en", "ka", "ru", "he"]),
+            z.record(z.string().max(10000)),
+          )
+          .optional(),
+      })
+      .strict()
+      .parse(req.body);
+    const settings = await db.agencySettings.upsert({
+      where: { id: "agency" },
+      create: { id: "agency", siteContent: values },
+      update: { siteContent: values },
+    });
+    await db.audit.create({
+      data: { actorId: req.actor.id, action: "WEBSITE_CONTENT", data: values },
+    });
+    return { data: settings.siteContent };
+  });
+
   app.get("/api/settings", { preHandler: authenticate }, async (req) => {
     requireAdmin(req.actor);
     return { data: await agencySettings() };

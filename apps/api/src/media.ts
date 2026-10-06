@@ -186,8 +186,11 @@ export async function mediaRoutes(app: FastifyInstance) {
     const profiles = await db.user.findMany({
       where: { active: true, publicProfile: true },
     });
+    const site = await db.agencySettings.findUnique({
+      where: { id: "agency" },
+    });
     if (
-      ![...projects, ...posts, ...profiles].some((x) =>
+      ![...projects, ...posts, ...profiles, site?.siteContent || {}].some((x) =>
         JSON.stringify(x).includes(url),
       )
     )

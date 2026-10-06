@@ -13,7 +13,7 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "node scripts/env.mjs npm run test --workspaces --if-present",
     "db:generate": "node scripts/env.mjs npm run generate -w @aura/database",
-    "db:migrate": "node scripts/env.mjs npm run migrate -w @aura/database",
+    "db:migrate": "node scripts/env.mjs npm exec -w @aura/database -- prisma migrate dev",
     "db:seed": "node scripts/env.mjs npm run seed -w @aura/database",
     "dev": "node scripts/dev.mjs",
     "setup": "node scripts/setup.mjs",

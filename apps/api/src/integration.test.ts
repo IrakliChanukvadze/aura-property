@@ -512,3 +512,16 @@ test("Excel template preview flags duplicates and imports only valid rows to age
     400,
   );
 });
+
+test("website content is editable per-user and public projection excludes private commission settings", async()=>{
+ const owner=await account("SUPER_ADMIN"),agent=await account("AGENT");
+ const before=(await request(owner,"GET","/api/site")).json().data;
+ assert.equal((await request(agent,"PATCH","/api/site",{translations:{en:{hero:"Unauthorized"}}})).statusCode,403);
+ try {
+  const response=await request(owner,"PATCH","/api/site",{heroVariant:"cityscape",translations:{en:{hero:"Preview headline"}}});
+  assert.equal(response.statusCode,200);
+  const publicResult=(await app.inject({method:"GET",url:"/api/public/site"})).json().data;
+  assert.equal(publicResult.translations.en.hero,"Preview headline");
+  assert.equal(publicResult.defaultAgentRate,undefined);
+ } finally {await request(owner,"PATCH","/api/site",before);}
+});

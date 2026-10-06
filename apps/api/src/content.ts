@@ -46,7 +46,8 @@ export function publicProject(p: any, usdGel?: number) {
   const publishedUnits = units.map(
     ({ minimumPrice, minimumCurrency, ...u }: any) => ({
       ...u,
-      price: u.showPrice ? Number(u.price) : null,
+      showPrice: u.showPrice && p.showPrices !== false,
+      price: u.showPrice && p.showPrices !== false ? Number(u.price) : null,
       area: Number(u.area),
     }),
   );
@@ -89,6 +90,7 @@ const projectBody = z.object({
   slug: z.string().regex(/^[a-z0-9-]+$/),
   city: z.string().min(1),
   coverImage: z.string().min(1),
+  showPrices: z.boolean().default(true),
   constructionStatus: z.enum(["ONGOING", "COMPLETED"]).default("ONGOING"),
   translations: z.record(z.unknown()),
   buildings: z.array(z.unknown()).default([]),

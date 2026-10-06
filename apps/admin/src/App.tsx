@@ -4,6 +4,7 @@ import { api } from "./api";
 import { Form, Modal, languages } from "./ui";
 import { Leads } from "./Leads";
 import { Dashboard, Personnel, Calendar, Settings } from "./Workspace";
+import { SiteContent } from "./SiteContent";
 import { Content } from "./Content";
 const nav = {
   en: [
@@ -79,7 +80,7 @@ export default function App() {
     refresh();
   }, [refresh]);
   useEffect(() => {
-    if (user?.role === "EDITOR") setPage(6);
+    if (user?.role === "EDITOR") setPage(user.contentEdit ? 6 : 8);
   }, [user?.role]);
   useEffect(() => {
     document.documentElement.lang = locale;
@@ -220,7 +221,7 @@ export default function App() {
               (i === 6 || i === 7
                 ? content
                 : user.role === "EDITOR"
-                  ? i >= 4
+                  ? i === 4 || i === 5 || i === 8
                   : true) && (
                 <button
                   key={i}
@@ -236,6 +237,18 @@ export default function App() {
                   {title}
                 </button>
               ),
+          )}
+          {content && (
+            <button
+              className={page === 9 ? "selected" : ""}
+              onClick={() => {
+                setPage(9);
+                setMenu(false);
+              }}
+            >
+              <span>◇</span>
+              {t("Website")}
+            </button>
           )}
         </nav>
         <div className="side-bottom">
@@ -300,9 +313,11 @@ export default function App() {
         </header>
         <div className="page">
           <p className="eyebrow">{t("AURA WORKSPACE")}</p>
-          <h1>{nav[locale][page]}</h1>
+          <h1>{page === 9 ? t("Website") : nav[locale][page]}</h1>
           {error && <p className="error">{error}</p>}
-          {page === 0 ? (
+          {page === 9 ? (
+            <SiteContent />
+          ) : page === 0 ? (
             <Dashboard />
           ) : page <= 3 ? (
             <Leads

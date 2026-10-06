@@ -118,6 +118,9 @@ export function Leads({
       .filter((u) => u.status !== "SOLD")
       .map((u) => ({
         value: u.id,
+        price:
+          Number(u.price) * (u.priceMode === "PER_M2" ? Number(u.area) : 1),
+        currency: u.priceCurrency,
         label: `${u.projectName} / #${u.number} · ${u.status}`,
       })),
   ];
@@ -867,8 +870,16 @@ function SaleForm({
   unitOptions,
 }: {
   onSubmit: (v: any) => Promise<void>;
-  unitOptions: { value: string; label: string }[];
+  unitOptions: {
+    value: string;
+    label: string;
+    price?: number;
+    currency?: string;
+  }[];
 }) {
+  const [selectedUnit, setSelectedUnit] = useState(""),
+    [saleCurrency, setSaleCurrency] = useState("GEL");
+  const chosenUnit = unitOptions.find((u) => u.value === selectedUnit);
   const [summary, setSummary] = useState<any>(null),
     [error, setError] = useState(""),
     [saving, setSaving] = useState(false);
@@ -949,11 +960,13 @@ function SaleForm({
           label: t("Apartment"),
           options: unitOptions,
           required: true,
+          onChange: setSelectedUnit,
         },
         {
           name: "price",
           label: t("Actual signed sale price"),
           type: "number",
+          value: chosenUnit?.currency === saleCurrency ? chosenUnit.price : "",
           required: true,
         },
         { name: "currency", label: t("Sale currency"), options: currencies },

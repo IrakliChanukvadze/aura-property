@@ -209,3 +209,13 @@ export const exchangeRate = () =>
     "exchange-rate",
     null,
   );
+
+export interface SiteContent {
+  phone?: string;
+  whatsapp?: string;
+  email?: string;
+  heroImage?: string;
+  heroVariant?: "cityscape" | "collage";
+  translations?: Partial<Record<Locale, Record<string, string>>>;
+}
+export const publicSite = () => get<SiteContent>("site", {});

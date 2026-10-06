@@ -30,7 +30,7 @@ export async function authenticate(req: any) {
   req.actor = session.user;
   if (
     session.user.role === "EDITOR" &&
-    /^\/api\/(leads|sales|reservations|comments|reminders|leave|schedules|calendar|commissions|leaderboards|teams|dashboard)(\/|$)/.test(
+    /^\/api\/(leads|sales|reservations|comments|reminders|commissions|leaderboards|dashboard)(\/|$)/.test(
       req.url.split("?")[0],
     )
   )
@@ -205,6 +205,9 @@ export async function authRoutes(app: FastifyInstance) {
       (b.role !== "AGENT" || b.contentEdit)
     )
       throw new ApiError(403, "FORBIDDEN", "Team leads may create agents only");
+    const selectedTeam=req.actor.role === "SUPER_ADMIN" ? b.teamId : req.actor.teamId;
+    if(b.role === "AGENT" && !selectedTeam) throw new ApiError(400,"TEAM_REQUIRED","Choose a team for the agent");
+    if(selectedTeam && !await db.team.findFirst({where:{id:selectedTeam,active:true}})) throw new ApiError(400,"INVALID_TEAM","Choose an active team");
     const defaults = await agencySettings();
     const u = await db.user.create({
       data: {

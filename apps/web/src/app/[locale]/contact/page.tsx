@@ -1,3 +1,4 @@
+import { publicSite } from "@/lib/api";
 import { notFound } from "next/navigation";
 import { isLocale, t } from "@/lib/i18n";
 import { metadata } from "@/lib/seo";
@@ -18,7 +19,8 @@ export default async function Page({
 }) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
-  const d = t(locale);
+  const site = await publicSite();
+  const d = { ...t(locale), ...site.translations?.[locale] };
   return (
     <section className="section page-section inquiry-section">
       <div>
@@ -31,7 +33,26 @@ export default async function Page({
           Tbilisi · Batumi
         </p>
       </div>
-      <InquiryForm locale={locale} />
+      <div>
+        {site.phone && (
+          <p>
+            <a href={`tel:${site.phone}`}>{site.phone}</a>
+          </p>
+        )}
+        {site.whatsapp && (
+          <p>
+            <a href={`https://wa.me/${site.whatsapp.replace(/\D/g, "")}`}>
+              WhatsApp
+            </a>
+          </p>
+        )}
+        {site.email && (
+          <p>
+            <a href={`mailto:${site.email}`}>{site.email}</a>
+          </p>
+        )}
+        <InquiryForm locale={locale} />
+      </div>
     </section>
   );
 }

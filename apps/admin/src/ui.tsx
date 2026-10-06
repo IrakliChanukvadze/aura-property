@@ -78,6 +78,7 @@ export type Field = {
   multiple?: boolean;
   options?: { value: string; label: string }[];
   value?: any;
+  onChange?: (value: string) => void;
 };
 export function Form({
   fields,
@@ -123,7 +124,9 @@ export function Form({
               />
             ) : f.options ? (
               <select
+                key={`${f.name}-${f.value ?? ""}`}
                 name={f.name}
+                onChange={(e) => f.onChange?.(e.target.value)}
                 multiple={f.multiple}
                 required={f.required}
                 defaultValue={f.value}
@@ -142,6 +145,7 @@ export function Form({
               />
             ) : (
               <input
+                key={`${f.name}-${f.value ?? ""}`}
                 name={f.name}
                 type={f.type || "text"}
                 minLength={

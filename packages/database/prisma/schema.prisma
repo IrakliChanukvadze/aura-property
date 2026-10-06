@@ -46,6 +46,7 @@ model Team {
  lastAssignedAt DateTime?
 }
 model Project {
+ showPrices Boolean @default(true)
  id String @id @default(cuid())
  slug String @unique
  city String
@@ -274,6 +275,7 @@ model CommissionRate {
 }
 
 model AgencySettings {
+ siteContent Json @default("{}")
  id String @id @default("agency")
  defaultAgentRate Decimal @default(1) @db.Decimal(8,4)
  defaultLeadRate Decimal @default(0.5) @db.Decimal(8,4)

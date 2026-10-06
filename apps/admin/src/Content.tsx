@@ -90,6 +90,15 @@ export function Content({
             value: selected?.city,
           },
           {
+            name: "showPrices",
+            label: t("Public prices"),
+            options: [
+              { value: "true", label: t("Show prices") },
+              { value: "false", label: t("Contact for price") },
+            ],
+            value: String(selected?.showPrices ?? true),
+          },
+          {
             name: "constructionStatus",
             label: t("Construction"),
             options: [
@@ -206,6 +215,7 @@ export function Content({
                   : {
                       slug: v.slug,
                       city: v.city,
+                      showPrices: v.showPrices === "true",
                       constructionStatus: v.constructionStatus,
                       coverImage: v.coverImage,
                       buildings: selected?.buildings || [],
@@ -325,7 +335,8 @@ function Inventory({
   const [tab, setTab] = useState("buildings"),
     [error, setError] = useState(""),
     [buildingId, setBuildingId] = useState(project.buildings?.[0]?.id || ""),
-    [floorId, setFloorId] = useState("");
+    [floorId, setFloorId] = useState(""),
+    [editingUnit, setEditingUnit] = useState<any>(null);
   const buildings = project.buildings || [],
     building = buildings.find((b: any) => b.id === buildingId),
     floors = building?.floors || [],
@@ -560,6 +571,7 @@ function Inventory({
                   {u.area} m² / {u.status} / {u.price} {u.priceCurrency}
                 </small>
               </div>
+              <button onClick={() => setEditingUnit(u)}>{t("Edit")}</button>
               {user.role === "SUPER_ADMIN" && (
                 <button
                   onClick={async () => {
@@ -585,6 +597,79 @@ function Inventory({
             </div>
           ))}
         </>
+      )}
+      {editingUnit && (
+        <Modal
+          title={`${t("Apartment")} #${editingUnit.number}`}
+          onClose={() => setEditingUnit(null)}
+        >
+          <Form
+            fields={[
+              {
+                name: "number",
+                label: t("Apartment number"),
+                required: true,
+                value: editingUnit.number,
+              },
+              {
+                name: "area",
+                label: t("Total area including balconies (m²)"),
+                type: "number",
+                required: true,
+                value: Number(editingUnit.area),
+              },
+              {
+                name: "bedrooms",
+                label: t("Bedrooms"),
+                type: "number",
+                required: true,
+                value: editingUnit.bedrooms,
+              },
+              {
+                name: "price",
+                label: t("Source price"),
+                type: "number",
+                required: true,
+                value: Number(editingUnit.price),
+              },
+              {
+                name: "priceCurrency",
+                label: t("Currency"),
+                options: currencies,
+                value: editingUnit.priceCurrency,
+              },
+              {
+                name: "priceMode",
+                label: t("Entry mode"),
+                options: [
+                  { value: "TOTAL", label: t("Total") },
+                  { value: "PER_M2", label: t("Per m²") },
+                ],
+                value: editingUnit.priceMode,
+              },
+              {
+                name: "showPrice",
+                label: t("Public prices"),
+                options: [
+                  { value: "true", label: t("Show prices") },
+                  { value: "false", label: t("Contact for price") },
+                ],
+                value: String(editingUnit.showPrice),
+              },
+            ]}
+            onSubmit={async (values) => {
+              await api(`/units/${editingUnit.id}`, "PATCH", {
+                ...values,
+                area: Number(values.area),
+                bedrooms: Number(values.bedrooms),
+                price: Number(values.price),
+                showPrice: values.showPrice === "true",
+              });
+              setEditingUnit(null);
+              await reload();
+            }}
+          />
+        </Modal>
       )}
       {error && <p className="error">{error}</p>}
     </section>
