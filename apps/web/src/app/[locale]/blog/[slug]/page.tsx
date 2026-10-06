@@ -1,6 +1,60 @@
-import {notFound} from 'next/navigation';
-import {isLocale} from '@/lib/i18n';
-import {post} from '@/lib/api';
-import {metadata,origin} from '@/lib/seo';
-export async function generateMetadata({params}:{params:Promise<{locale:string;slug:string}>}){const {locale,slug}=await params;const p=await post(slug);if(!p)return {};const l=isLocale(locale)?locale:'en';return metadata(l,p.translations[l].title,p.translations[l].body?.slice(0,160)||'',`/blog/${slug}`);}
-export default async function Page({params}:{params:Promise<{locale:string;slug:string}>}){const {locale,slug}=await params;if(!isLocale(locale))notFound();const p=await post(slug);if(!p)notFound();return <article className="article section page-section"><time className="eyebrow">{new Date(p.publishedAt).toLocaleDateString(locale)}</time><h1>{p.translations[locale].title}</h1>{p.coverImage&&<img className="article-image" src={p.coverImage} alt=""/>}<div className="article-body">{p.translations[locale].body?.split('\n').map((paragraph,i)=><p key={i}>{paragraph}</p>)}</div><script type="application/ld+json" dangerouslySetInnerHTML={{__html:JSON.stringify({'@context':'https://schema.org','@type':'BlogPosting',headline:p.translations[locale].title,datePublished:p.publishedAt,inLanguage:locale,url:`${origin}/${locale}/blog/${slug}`,publisher:{'@type':'Organization',name:'Aura Property'}}).replace(/</g,'\\u003c')}}/></article>}
+import { notFound } from "next/navigation";
+import { isLocale } from "@/lib/i18n";
+import { post } from "@/lib/api";
+import { metadata, origin } from "@/lib/seo";
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string; slug: string }>;
+}) {
+  const { locale, slug } = await params;
+  const p = await post(slug);
+  if (!p) return {};
+  const l = isLocale(locale) ? locale : "en";
+  return metadata(
+    l,
+    p.translations[l].title,
+    p.translations[l].body?.slice(0, 160) || "",
+    `/blog/${slug}`,
+  );
+}
+export default async function Page({
+  params,
+}: {
+  params: Promise<{ locale: string; slug: string }>;
+}) {
+  const { locale, slug } = await params;
+  if (!isLocale(locale)) notFound();
+  const p = await post(slug);
+  if (!p) notFound();
+  return (
+    <article className="article section page-section">
+      <time className="eyebrow">
+        {new Date(p.publishedAt).toLocaleDateString(locale)}
+      </time>
+      <h1>{p.translations[locale].title}</h1>
+      {p.coverImage && (
+        <img className="article-image" src={p.coverImage} alt="" />
+      )}
+      <div className="article-body">
+        {p.translations[locale].body?.split("\n").map((paragraph, i) => (
+          <p key={i}>{paragraph}</p>
+        ))}
+      </div>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "BlogPosting",
+            headline: p.translations[locale].title,
+            datePublished: p.publishedAt,
+            inLanguage: locale,
+            url: `${origin}/${locale}/blog/${slug}`,
+            publisher: { "@type": "Organization", name: "Aura Property" },
+          }).replace(/</g, "\\u003c"),
+        }}
+      />
+    </article>
+  );
+}

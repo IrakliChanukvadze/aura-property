@@ -7,3 +7,5 @@ dist/
 coverage/
 playwright-report/
 .DS_Store
+*.tsbuildinfo
+.data/
