@@ -1,0 +1,22 @@
+{
+  "name": "aura-property",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev -w @aura/web",
+    "dev:api": "npm run dev -w @aura/api",
+    "dev:admin": "npm run dev -w @aura/admin",
+    "build": "npm run build --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "db:generate": "npm run generate -w @aura/database",
+    "db:migrate": "npm run migrate -w @aura/database",
+    "db:seed": "npm run seed -w @aura/database"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
