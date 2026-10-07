@@ -1,5 +1,5 @@
 """Prepare a standalone inventory snapshot from the authorized read-only Pini export."""
-import json, hashlib, pathlib, subprocess, concurrent.futures
+import json, hashlib, pathlib, subprocess, concurrent.futures, tempfile
 root=pathlib.Path(__file__).resolve().parents[2]
 s=json.loads((root/'.local/imports/pini-boulevard-source.json').read_text())
 published=[p for p in s['projects'] if p['status']=='published'];ids={p['id'] for p in published}
@@ -11,17 +11,37 @@ for u in s['units']:
  if u['project_id'] in ids:urls.update(u.get('photos') or [])
 urls.discard(None);urls.discard('')
 assets=root/'apps/web/public/images/tbilisi-boulevard';assets.mkdir(parents=True,exist_ok=True)
+previous_path=root/'packages/database/prisma/imports/tbilisi-boulevard.json'
+previous_media=json.loads(previous_path.read_text()).get('mediaManifest',{}) if previous_path.exists() else {}
+def digest(path):
+ result=hashlib.sha256()
+ with path.open('rb') as content:
+  for chunk in iter(lambda:content.read(1024*1024),b''):result.update(chunk)
+ return result.hexdigest()
 def download(url):
  if not url.startswith('https://media.pini.ge/'):raise ValueError('Unexpected media host')
- suffix=pathlib.Path(url.split('?')[0]).suffix.lower();name=hashlib.sha256(url.encode()).hexdigest()[:20]+suffix
- path=assets/name
- if not path.exists():subprocess.run(['curl','--fail','--silent','--show-error','--location','--retry','2',url,'-o',str(path)],check=True)
- if path.stat().st_size==0:raise ValueError('Empty asset')
+ suffix=pathlib.Path(url.split('?')[0]).suffix.lower()
+ if suffix not in {'.png','.jpg','.jpeg','.webp','.avif','.gif'}:raise ValueError('Unexpected image type')
+ # Fetch every time: the source may replace an image without changing its URL.
+ # Keep previous asset paths for identical bytes and version changed images.
+ with tempfile.TemporaryDirectory(prefix='aura-boulevard-') as temporary:
+  downloaded=pathlib.Path(temporary)/('asset'+suffix)
+  subprocess.run(['curl','--fail','--silent','--show-error','--location','--proto','=https','--proto-redir','=https','--connect-timeout','15','--max-time','120','--retry','2',url,'-o',str(downloaded)],check=True)
+  if downloaded.stat().st_size==0:raise ValueError('Empty asset')
+  content_hash=digest(downloaded)
+  previous=previous_media.get(url,'')
+  if previous.startswith('/images/tbilisi-boulevard/'):
+   existing=assets/pathlib.Path(previous).name
+   if existing.is_file() and digest(existing)==content_hash:return url,previous
+  name=hashlib.sha256(url.encode()).hexdigest()[:20]+'-'+content_hash[:12]+suffix
+  path=assets/name
+  if not path.exists():path.write_bytes(downloaded.read_bytes())
+  elif digest(path)!=content_hash:raise ValueError('Asset hash collision')
  return url,'/images/tbilisi-boulevard/'+name
 with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:media=dict(pool.map(download,sorted(urls)))
 def poly(value):
  if not value:return []
- if isinstance(value[0],list):value=value[0]
+ if isinstance(value[0],list) and value[0] and isinstance(value[0][0],(list,dict)):value=value[0]
  return [[p['x'],p['y']] if isinstance(p,dict) else p for p in value]
 buildings=[];blocks=[];units=[]
 for p in published:
