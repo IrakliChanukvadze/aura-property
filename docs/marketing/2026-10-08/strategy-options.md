@@ -23,6 +23,8 @@ All options preserve map-first Projects / Houses / Land. No standalone flat list
 
 **Free listings are an acquisition tool, not a moat.** If free produces stale pins and incomplete information, it weakens the brand. Define a listing review scope, information owner and refresh procedure. “Verified” must describe the actual checks; it must not imply title, construction or investment guarantees.
 
+Overnight verification: Korter itself already offers free building/cottage project listings and promotion services. Pini therefore needs a measured experience/data/onboarding advantage beyond free pricing. The [viability memo](competitive-position-and-viability.md) also shows that the proposed low-priced packages would need more paying customers than the initial pilots to cover their planning envelopes.
+
 **A huge national brand starts with a useful local result.** Preserve the national map, but recruit dense supply in a reachable area first. Keep all supported categories visible; avoid spending equally on three thin catalogues before proving buyer connections. Choose the first district/category based on actual inventory, not this report's preference.
 
 **Viral attention cannot substitute for purchasing intent.** Design memorable series and measure their business path. A spectacular balcony clip that produces no relevant project visits or consultations is a creative learning result, not a growth success.
@@ -139,7 +141,7 @@ Pini remains a useful free-project map with houses/land, while Premium sells con
 
 Bounded packages: proposed $450 basic project edit; $900 original capture with selected localization; $1,500 monthly production package. Define outputs, formats, rights, revision count and turnaround. Ad budgets are separate; listing is not conditional on buying content.
 
-Example $900 package: capture $200 + editing $200 + language/QA $100 + tools/retries $100 = $600 direct cost and $300 contribution (33.3%). Three packages/month give $900 contribution. An additional $300 of rework eliminates margin. Quoted local production costs and measured revision time are essential before publishing prices.
+Initial coarse $900 illustration: capture $200 + editing $200 + language/QA $100 + tools/retries $100 = $600 direct cost and $300 contribution (33.3%). Three packages/month give $900 contribution. An additional $300 of rework eliminates margin. Overnight refinement scopes the package as three masters plus seven reused variants and costs it at about $714.21, leaving only 20.6% contribution under the stated labor assumptions. The detailed [production package model](production-packages.md) supersedes the coarse estimate for scope-specific pricing decisions. Quoted local production costs and measured revision time are essential before publishing prices.
 
 ### Acquisition and attention
 
@@ -178,6 +180,8 @@ Cost per accepted asset including rejected takes; revision hours; native speech 
 Use original/human performance, real interface captures and approved project media as the core. Targeted lip correction on original footage is a candidate workflow; facial detail preservation and Georgian quality must pass visual/listening review. No mouth-only editing boundary is guaranteed. Sync's published Creator plan is $19/month plus usage; sync-3 at 25 fps is $0.1334/second. ElevenLabs Starter's regular price is $6/month; temporary discounts are excluded from recurring budgets. [Sync pricing](https://sync.so/pricing), [ElevenLabs pricing](https://elevenlabs.io/pricing).
 
 Ten accepted videos with 16 speaking seconds each and three attempts allocate $64.03 lip-correction usage + $19 Sync + $6 audio = **$89.03/month, $8.90/video**, excluding filming, editing, native review and distribution. One video under the same assumptions costs **$31.40** because the subscriptions cannot be spread. At higher frame rates, re-quote the usage rate.
+
+This is a direct-provider **alternative voice** scenario, not a quote for the approved Grady preset through Higgsfield. Matching external Grady voice identity/access has not been established. Keep approved recordings, and obtain exact Higgsfield quotes for new Grady lines. Do not clone the preset from generated output. Ten independent masters in four languages are forty editions; the detailed model allocates $297.13 software under its assumptions before human production/review.
 
 Local filming/editing assumption, not a quote: ten videos $250–$800. Adding the software scenario gives **$339.03–$889.03, $33.90–$88.90 each** if ten outputs are accepted. No implication that these include three language editions, reshoots, agency fees or a fresh AI-generated master. See the UGC report for boundaries and alternatives.
 

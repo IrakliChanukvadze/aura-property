@@ -42,3 +42,16 @@ No private conversion/ad analytics, actual agency fee contracts, local productio
 ## Later passes
 
 Append dated findings, changed assumptions and verification evidence here. Keep owner decisions separate from proposals. Do not erase failed hypotheses or silently change an approved scope.
+
+## Overnight pass 1 — 8 October, approximately 02:30–02:40
+
+- Confirmed the research branch and clean working tree before work; no branch switch or application changes.
+- Verified Korter's first-party developer page offers free building/cottage listings plus promotion. Added a competitive correction: free is an acquisition policy, not unique differentiation.
+- Added contribution/capacity analysis. Under the existing illustrative costs, covering the planning envelope would need 23 promotion accounts, 184 buyer-service bookings over 90 days, or seven production packages/month. These are arithmetic thresholds, not demand forecasts.
+- Added ten first-party supply-research examples with explicit hold/confirmation needs. Independently verified Metropol's Bagebi sold-out versus availability contradiction across its two public pages. No examples were imported as inventory or represented as partners.
+- Added category-specific onboarding/freshness playbook, concrete screen/state/copy briefs and 15 read-only buyer tasks. Preserved D-231/D-232 and Projects/Houses/Land map-first scope.
+- Added detailed production package model. A $900 three-master/seven-variant package has only 20.6% modeled contribution versus the initial coarse 33.3% estimate; kept the earlier estimate visible and explained the superseding scoped model. Four languages multiply ten masters to forty editions.
+- Clarified that direct ElevenLabs subscription pricing does not establish availability or price of the approved Higgsfield Grady preset. Independently checked Higgsfield's output ownership/terms; commercial editing does not imply permission to train another model from outputs. No voice cloning, upload or generation performed.
+- Recalculated package margins and multilingual software totals; reviewed all specialist reports before integration. No external vendor quotation or audiovisual lip quality test was performed.
+- Integration review updated Plan C's break-even to ten packages/month under the detailed cost model, versus seven under the retained coarse model. Its 220 fulfillment hours exceed the illustrative 100-hour allocation; recorded this mismatch explicitly rather than implying the offer is viable.
+- No push, deployment, publication, outreach, account change or spend. Only research documents changed.

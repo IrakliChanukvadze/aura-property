@@ -5,10 +5,14 @@ Prepared 8 October 2026, Asia/Tbilisi. Research and decision proposals; no campa
 ## Start here
 
 - [Three complete plans](strategy-options.md): alternative businesses, 90-day execution, budgets, metrics and tradeoffs.
+- [Competitive position and viability](competitive-position-and-viability.md): why free is not unique and the contribution/capacity each plan needs.
 - [Research brief and owner decisions](brief.md): authoritative scope and boundaries.
 - [Growth evidence](growth-research.md): market, audience, competitors and economics.
 - [Website design](design-research.md): live Pini observations and proposed map-first directions; Aura's approved cinematic direction retained.
 - [UGC and production costs](ugc-research.md): footage-preserving repair, voice options, retry costs and content concepts.
+- [Supply density and onboarding](supply-density.md): ten public project/developer research examples and freshness checks; not partners or authorized inventory.
+- [Production packages](production-packages.md): exact masters/variants/language editions, labor, rights and margin sensitivity.
+- [Concrete screen briefs](screen-briefs.md): desktop/mobile layout, copy, empty states and 15 read-only buyer tasks.
 - [Execution backlog](execution-backlog.csv): reviewable actions, dependencies, owners and evidence.
 - [Four-week content calendar](content-calendar.md): production ideas and unsent outreach drafts.
 - [Measurement specification](measurement.md): event definitions, source attribution, economics and experiment limits.
