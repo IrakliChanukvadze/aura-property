@@ -4,6 +4,7 @@ import { X, ArrowUpRight } from "lucide-react";
 import { type Project, type Unit, money, totalPrice } from "@/lib/api";
 import { type Locale, t } from "@/lib/i18n";
 import { InquiryForm } from "./InquiryForm";
+import { ProjectInquiry } from "./ProjectInquiry";
 import styles from "./Explorer.module.css";
 export function Explorer({
   project,
@@ -15,6 +16,12 @@ export function Explorer({
   usdGel?: number;
 }) {
   const d = t(locale);
+  const apartmentLabel = {
+    en: "Apartments",
+    ka: "ბინები",
+    ru: "Квартиры",
+    he: "דירות",
+  }[locale];
   const [buildingIndex, setBuildingIndex] = useState(0);
   const building = project.buildings[buildingIndex];
   const [floorIndex, setFloorIndex] = useState(0);
@@ -93,19 +100,94 @@ export function Explorer({
     (!beds || u.bedrooms === Number(beds)) &&
     (!only || u.status === "AVAILABLE");
   return (
-    <section className="explorer section block-explorer">
-      <div className="section-heading">
-        <div>
-          <p className="eyebrow">
-            {project.city} / {building.name}
-          </p>
-          <h2>{d.plan}</h2>
+    <section className={styles.explorer} aria-label={d.plan}>
+      <div className={styles.titlebar}>
+        <h1>{d.plan}</h1>
+        <div className={styles.titleActions}>
+          <span>{building.name}</span>
+          <ProjectInquiry project={project} locale={locale} />
         </div>
-        <div className="currency-toggle">
+      </div>
+      <div className={styles.toolbar}>
+        <div className={styles.buildingTabs} aria-label={building.name}>
+          {project.buildings.map((b, i) => (
+            <button
+              key={b.id}
+              onClick={() => selectBuilding(i)}
+              aria-pressed={i === buildingIndex}
+              title={b.name}
+            >
+              {b.name.includes("/") ? b.name.split("/").at(-1)?.trim() : b.name}
+            </button>
+          ))}
+        </div>
+        <div className={styles.filters}>
+          <label>
+            {d.price} ({currency})
+            <div className={styles.range}>
+              <input
+                aria-label={d.minimumPrice}
+                type="number"
+                min="0"
+                placeholder={d.minimum}
+                value={minPrice}
+                onChange={(e) => setMinPrice(e.target.value)}
+              />
+              <input
+                aria-label={d.maximumPrice}
+                type="number"
+                min="0"
+                placeholder={d.maximum}
+                value={maxPrice}
+                onChange={(e) => setMaxPrice(e.target.value)}
+              />
+            </div>
+          </label>
+          <label>
+            {d.area} (m²)
+            <div className={styles.range}>
+              <input
+                aria-label={d.minimumArea}
+                type="number"
+                min="0"
+                placeholder={d.minimum}
+                value={minArea}
+                onChange={(e) => setMinArea(e.target.value)}
+              />
+              <input
+                aria-label={d.maximumArea}
+                type="number"
+                min="0"
+                placeholder={d.maximum}
+                value={maxArea}
+                onChange={(e) => setMaxArea(e.target.value)}
+              />
+            </div>
+          </label>
+          <label>
+            {d.bedrooms}
+            <select value={beds} onChange={(e) => setBeds(e.target.value)}>
+              <option value="">{d.any}</option>
+              {[0, 1, 2, 3, 4].map((b) => (
+                <option key={b} value={b}>
+                  {b}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className={styles.availableToggle}>
+            <input
+              type="checkbox"
+              checked={only}
+              onChange={(e) => setOnly(e.target.checked)}
+            />
+            {d.availableOnly}
+          </label>
+        </div>
+        <div className={styles.currency}>
           {(["USD", "GEL"] as const).map((c) => (
             <button
               aria-pressed={currency === c}
-              className={currency === c ? "active" : ""}
               key={c}
               onClick={() => setCurrency(c)}
             >
@@ -114,118 +196,40 @@ export function Explorer({
           ))}
         </div>
       </div>
-      <div className="filters">
-        <label>
-          {d.price} ({currency})
-          <div className="range-input">
-            <input
-              aria-label={d.minimumPrice}
-              type="number"
-              min="0"
-              placeholder={d.minimum}
-              value={minPrice}
-              onChange={(e) => setMinPrice(e.target.value)}
-            />
-            <input
-              aria-label={d.maximumPrice}
-              type="number"
-              min="0"
-              placeholder={d.maximum}
-              value={maxPrice}
-              onChange={(e) => setMaxPrice(e.target.value)}
-            />
-          </div>
-        </label>
-        <label>
-          {d.area} (m²)
-          <div className="range-input">
-            <input
-              aria-label={d.minimumArea}
-              type="number"
-              min="0"
-              placeholder={d.minimum}
-              value={minArea}
-              onChange={(e) => setMinArea(e.target.value)}
-            />
-            <input
-              aria-label={d.maximumArea}
-              type="number"
-              min="0"
-              placeholder={d.maximum}
-              value={maxArea}
-              onChange={(e) => setMaxArea(e.target.value)}
-            />
-          </div>
-        </label>
-        <label>
-          {d.bedrooms}
-          <select value={beds} onChange={(e) => setBeds(e.target.value)}>
-            <option value="">{d.any}</option>
-            {[0, 1, 2, 3, 4].map((b) => (
-              <option key={b} value={b}>
-                {b}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="checkbox-label">
-          <input
-            type="checkbox"
-            checked={only}
-            onChange={(e) => setOnly(e.target.checked)}
-          />
-          {d.availableOnly}
-        </label>
-      </div>
-      {project.buildings.length > 1 && (
-        <div className="building-tabs">
-          {project.buildings.map((b, i) => (
-            <button
-              className="button"
-              key={b.id}
-              onClick={() => {
-                selectBuilding(i);
-              }}
-              aria-pressed={i === buildingIndex}
+      <div className={styles.grid}>
+        <div className={styles.buildingCard}>
+          <div className={styles.buildingImage}>
+            <img src={building.coverImage} alt={building.name} />
+            <svg
+              viewBox="0 0 100 100"
+              preserveAspectRatio="none"
+              aria-label={`${d.floor} — ${building.name}`}
             >
-              {b.name}
-            </button>
-          ))}
-        </div>
-      )}
-      <div className="explorer-grid">
-        <div className="building-preview">
-          <img src={building.coverImage} alt={building.name} />
-          <svg
-            viewBox="0 0 100 100"
-            preserveAspectRatio="none"
-            aria-label={`${d.floor} — ${building.name}`}
-          >
-            {building.floors.map((f, i) => (
-              <polygon
-                key={f.id}
-                points={f.polygon.map((p) => p.join(",")).join(" ")}
-                tabIndex={0}
-                role="button"
-                aria-label={`${d.floor} ${f.number}`}
-                aria-pressed={floorIndex === i}
-                className={
-                  floorIndex === i ? "floor-polygon selected" : "floor-polygon"
-                }
-                onClick={() => setFloorIndex(i)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    setFloorIndex(i);
+              {building.floors.map((f, i) => (
+                <polygon
+                  key={f.id}
+                  points={f.polygon.map((p) => p.join(",")).join(" ")}
+                  tabIndex={0}
+                  role="button"
+                  aria-label={`${d.floor} ${f.number}`}
+                  aria-pressed={floorIndex === i}
+                  className={
+                    floorIndex === i
+                      ? "floor-polygon selected"
+                      : "floor-polygon"
                   }
-                }}
-              />
-            ))}
-          </svg>
-          <div className="building-caption">{building.name}</div>
-        </div>
-        <div className="plan-panel">
-          <div className="floor-selector">
+                  onClick={() => setFloorIndex(i)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setFloorIndex(i);
+                    }
+                  }}
+                />
+              ))}
+            </svg>
+          </div>
+          <div className={styles.floorSelector}>
             <span>{d.floor}</span>
             {building.floors.map((f, i) => (
               <button
@@ -238,111 +242,135 @@ export function Explorer({
               </button>
             ))}
           </div>
-          <div className="floor-plan">
-            {floor.image ? (
-              <img
-                src={floor.image}
-                alt={`${d.floor} ${floor.number} — apartment floor plan`}
-                draggable={false}
-              />
-            ) : (
-              <p className="notice">{d.loadingPlans}</p>
-            )}
-            <svg
-              viewBox="0 0 100 100"
-              preserveAspectRatio="none"
-              aria-label={d.plan}
-            >
-              {floor.units
-                .filter((u) => u.polygon.length >= 3)
-                .map((u) => (
-                  <g key={u.id}>
-                    <polygon
-                      points={u.polygon.map((p) => p.join(",")).join(" ")}
-                      className={`unit-polygon ${u.status.toLowerCase()} ${matches(u) ? "" : "muted"}`}
-                      tabIndex={
-                        u.status === "AVAILABLE" && matches(u) ? 0 : undefined
-                      }
-                      role={
-                        u.status === "AVAILABLE" && matches(u)
-                          ? "button"
-                          : undefined
-                      }
-                      aria-label={`${u.number}, ${u.area} m², ${d[u.status.toLowerCase() as "available" | "reserved" | "sold"]}`}
-                      onClick={() => {
-                        if (u.status === "AVAILABLE" && matches(u)) {
-                          setUnit(u);
-                          setInquire(false);
-                        }
-                      }}
-                      onKeyDown={(e) => {
-                        if (
-                          u.status === "AVAILABLE" &&
-                          matches(u) &&
-                          (e.key === "Enter" || e.key === " ")
-                        ) {
-                          e.preventDefault();
-                          setUnit(u);
-                          setInquire(false);
-                        }
-                      }}
-                    />
-                    <text
-                      pointerEvents="none"
-                      x={
-                        u.polygon.reduce((a, p) => a + p[0], 0) /
-                        u.polygon.length
-                      }
-                      y={
-                        u.polygon.reduce((a, p) => a + p[1], 0) /
-                        u.polygon.length
-                      }
-                      textAnchor="middle"
-                      dominantBaseline="middle"
-                    >
-                      {u.number}
-                    </text>
-                  </g>
-                ))}
-            </svg>
-          </div>
-          <div className="plan-legend">
-            {(["available", "reserved", "sold"] as const).map((s) => (
-              <span key={s}>
-                <i className={s} />
-                {d[s]}
-              </span>
-            ))}
-          </div>
-          <div className="apartment-list">
-            {floor.units.filter(matches).map((u) => (
-              <button
-                disabled={u.status !== "AVAILABLE"}
-                key={u.id}
-                onClick={() => {
-                  setUnit(u);
-                  setInquire(false);
-                }}
+        </div>
+        <div className={styles.planCard}>
+          <div className={styles.planCanvas}>
+            <div className="floor-plan">
+              {floor.image ? (
+                <img
+                  src={floor.image}
+                  alt={`${d.floor} ${floor.number} — apartment floor plan`}
+                  draggable={false}
+                />
+              ) : (
+                <p className="notice">{d.loadingPlans}</p>
+              )}
+              <svg
+                viewBox="0 0 100 100"
+                preserveAspectRatio="none"
+                aria-label={d.plan}
               >
-                <span>#{u.number}</span>
-                <span>
-                  {u.area} m² · {u.bedrooms} {d.rooms}
+                {floor.units
+                  .filter((u) => u.polygon.length >= 3)
+                  .map((u) => (
+                    <g key={u.id}>
+                      <polygon
+                        points={u.polygon.map((p) => p.join(",")).join(" ")}
+                        className={`unit-polygon ${u.status.toLowerCase()} ${matches(u) ? "" : "muted"}`}
+                        tabIndex={
+                          u.status === "AVAILABLE" && matches(u) ? 0 : undefined
+                        }
+                        role={
+                          u.status === "AVAILABLE" && matches(u)
+                            ? "button"
+                            : undefined
+                        }
+                        aria-label={`${u.number}, ${u.area} m², ${d[u.status.toLowerCase() as "available" | "reserved" | "sold"]}`}
+                        onClick={() => {
+                          if (u.status === "AVAILABLE" && matches(u)) {
+                            setUnit(u);
+                            setInquire(false);
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (
+                            u.status === "AVAILABLE" &&
+                            matches(u) &&
+                            (e.key === "Enter" || e.key === " ")
+                          ) {
+                            e.preventDefault();
+                            setUnit(u);
+                            setInquire(false);
+                          }
+                        }}
+                      />
+                      <text
+                        pointerEvents="none"
+                        x={
+                          u.polygon.reduce((a, p) => a + p[0], 0) /
+                          u.polygon.length
+                        }
+                        y={
+                          u.polygon.reduce((a, p) => a + p[1], 0) /
+                          u.polygon.length
+                        }
+                        textAnchor="middle"
+                        dominantBaseline="middle"
+                      >
+                        {u.number}
+                      </text>
+                    </g>
+                  ))}
+              </svg>
+            </div>
+          </div>
+          <aside className={styles.inventory}>
+            <div className={styles.legend}>
+              {(["available", "reserved", "sold"] as const).map((s) => (
+                <span key={s}>
+                  <i className={s} />
+                  {d[s]}
                 </span>
-                <span>
-                  {u.status === "AVAILABLE" && u.showPrice
-                    ? money(
-                        converted(u) ?? totalPrice(u),
-                        converted(u) === null ? u.priceCurrency : currency,
-                        locale,
-                      )
-                    : d[
+              ))}
+            </div>
+            <h3 className={styles.inventoryTitle}>
+              {apartmentLabel} ({d.floor} {floor.number})
+            </h3>
+            <div className={styles.apartmentList}>
+              {floor.units.filter(matches).map((u) => (
+                <button
+                  disabled={u.status !== "AVAILABLE"}
+                  key={u.id}
+                  onClick={() => {
+                    setUnit(u);
+                    setInquire(false);
+                  }}
+                >
+                  <span className={styles.unitInfo}>
+                    <span className={styles.unitSummary}>
+                      <strong>{u.number}</strong>
+                      <span>
+                        {u.details?.areaKnown === false ? "—" : u.area} m²
+                      </span>
+                      <span>
+                        {u.details?.roomsKnown === false ? "—" : u.bedrooms}{" "}
+                        {d.rooms}
+                      </span>
+                    </span>
+                    {u.showPrice && (
+                      <span className={styles.unitPrice}>
+                        {money(
+                          converted(u) ?? totalPrice(u),
+                          converted(u) === null ? u.priceCurrency : currency,
+                          locale,
+                        )}
+                      </span>
+                    )}
+                  </span>
+                  <span
+                    className={`${styles.status} ${styles[u.status.toLowerCase() as "available" | "reserved" | "sold"]}`}
+                  >
+                    {
+                      d[
                         u.status.toLowerCase() as
                           "available" | "reserved" | "sold"
-                      ]}
-                </span>
-              </button>
-            ))}
-          </div>
+                      ]
+                    }
+                  </span>
+                </button>
+              ))}
+            </div>
+          </aside>
         </div>
       </div>
       <dialog

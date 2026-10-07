@@ -32,3 +32,463 @@
   max-height: 70vh;
   object-fit: contain;
 }
+
+.explorer {
+  padding: 14px 30px 30px;
+  width: 100%;
+  --explorer-border: color-mix(in srgb, var(--text) 24%, transparent);
+  --explorer-active: #799775;
+}
+.toolbar {
+  display: grid;
+  grid-template-columns: minmax(130px, 0.9fr) minmax(0, 3.6fr) 150px;
+  gap: 24px;
+  align-items: center;
+  border: 1px solid var(--explorer-border);
+  border-radius: 6px;
+  padding: 13px 14px;
+  margin-bottom: 18px;
+  background: color-mix(in srgb, var(--bg) 72%, transparent);
+}
+.buildingTabs,
+.currency {
+  display: flex;
+  min-width: 0;
+}
+.buildingTabs button,
+.currency button,
+.floorSelector button {
+  background: transparent;
+  border: 1px solid var(--explorer-border);
+  color: var(--text);
+  border-radius: 4px;
+  min-height: 32px;
+  padding: 6px 12px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.buildingTabs button,
+.currency button {
+  flex: 1;
+}
+.buildingTabs button + button,
+.currency button + button {
+  margin-inline-start: -1px;
+}
+.buildingTabs button[aria-pressed="true"],
+.currency button[aria-pressed="true"],
+.floorSelector button[aria-pressed="true"] {
+  background: var(--explorer-active);
+  border-color: var(--explorer-active);
+  color: #102c23;
+}
+.filters {
+  display: grid;
+  grid-template-columns:
+    minmax(140px, 1.25fr) minmax(140px, 1.25fr) minmax(90px, 0.75fr)
+    minmax(90px, 0.8fr);
+  gap: 22px;
+  align-items: center;
+}
+.filters > label {
+  display: grid;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text);
+  min-width: 0;
+  position: relative;
+}
+.filters > label:not(:first-child)::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: -11px;
+  top: 4px;
+  bottom: 3px;
+  width: 1px;
+  background: var(--explorer-border);
+}
+.range {
+  display: flex;
+  gap: 10px;
+}
+.filters input:not([type="checkbox"]),
+.filters select {
+  min-width: 0;
+  width: 100%;
+  border: 1px solid var(--explorer-border);
+  background: transparent;
+  border-radius: 4px;
+  color: var(--text);
+  min-height: 30px;
+  padding: 4px 9px;
+  font-size: 11px;
+}
+.filters input::placeholder {
+  color: var(--text);
+  opacity: 0.75;
+}
+.filters .availableToggle {
+  gap: 9px;
+  grid-template-columns: 1fr;
+  align-items: center;
+}
+.availableToggle input {
+  appearance: none;
+  width: 34px;
+  height: 19px;
+  min-height: 19px;
+  padding: 0;
+  border: 0;
+  border-radius: 30px;
+  background: #71897588;
+  margin: 0;
+  cursor: pointer;
+  order: 2;
+  position: relative;
+}
+.availableToggle input::before {
+  content: "";
+  width: 14px;
+  height: 14px;
+  background: #e4e5d7;
+  border-radius: 50%;
+  position: absolute;
+  top: 2.5px;
+  inset-inline-start: 3px;
+  transition: inset-inline-start 0.15s;
+}
+.availableToggle input:checked {
+  background: var(--explorer-active);
+}
+.availableToggle input:checked::before {
+  inset-inline-start: 17px;
+}
+.grid {
+  display: grid;
+  grid-template-columns: 36% minmax(0, 1fr);
+  gap: 20px;
+  align-items: stretch;
+}
+.buildingCard,
+.planCard {
+  border: 1px solid var(--explorer-border);
+  border-radius: 6px;
+  min-width: 0;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--bg) 65%, transparent);
+}
+.buildingCard {
+  display: flex;
+  flex-direction: column;
+}
+.buildingImage {
+  position: relative;
+  min-width: 0;
+  margin-block: auto;
+}
+.buildingImage > img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.buildingImage > svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.floorSelector {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 18px 16px;
+  border-top: 1px solid var(--explorer-border);
+  flex-wrap: wrap;
+  font-size: 11px;
+}
+.floorSelector > span {
+  margin-inline-end: 8px;
+}
+.floorSelector button {
+  min-width: 30px;
+  padding: 6px;
+}
+.planCard {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(200px, 1fr);
+  gap: 18px;
+  padding: 16px;
+}
+.planCanvas {
+  display: grid;
+  align-items: center;
+  min-width: 0;
+  min-height: 340px;
+}
+.planCanvas :global(.floor-plan) {
+  width: 100%;
+}
+.planCanvas :global(.floor-plan > img) {
+  display: block;
+}
+.inventory {
+  min-width: 0;
+  border-inline-start: 1px solid var(--explorer-border);
+  padding-inline-start: 16px;
+}
+.legend {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 18px;
+  font-size: 11px;
+}
+.legend span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.legend i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.legend i:global(.available) {
+  background: #7c9f7a;
+}
+.legend i:global(.reserved) {
+  background: #c6b287;
+}
+.legend i:global(.sold) {
+  background: #af7375;
+}
+.inventoryTitle {
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  margin: 0;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--explorer-border);
+}
+.apartmentList {
+  max-height: 300px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+.apartmentList button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid var(--explorer-border);
+  padding: 14px 0;
+  background: transparent;
+  color: var(--text);
+  text-align: start;
+  font-size: 11px;
+}
+.apartmentList button:disabled {
+  opacity: 1;
+  cursor: default;
+}
+.apartmentList button:not(:disabled):hover .unitSummary {
+  text-decoration: underline;
+}
+.unitInfo {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+.unitSummary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  font-size: 11px;
+}
+.unitSummary strong {
+  font-weight: 500;
+}
+.unitPrice {
+  color: var(--muted);
+  font-size: 11px;
+}
+.status {
+  font-size: 10px;
+  border-radius: 5px;
+  padding: 3px 6px;
+  white-space: nowrap;
+  color: #fff;
+}
+.available {
+  color: #102c23;
+  background: #799975;
+}
+.reserved {
+  background: #ac966b;
+}
+.sold {
+  background: #a5686a;
+}
+.toolbar button:focus-visible,
+.toolbar input:focus-visible,
+.toolbar select:focus-visible,
+.floorSelector button:focus-visible,
+.apartmentList button:focus-visible {
+  outline: 2px solid var(--explorer-active);
+  outline-offset: 3px;
+}
+@media (max-width: 1100px) {
+  .toolbar {
+    grid-template-columns: minmax(110px, 0.75fr) minmax(0, 4fr) 110px;
+    gap: 14px;
+  }
+  .filters {
+    gap: 14px;
+    grid-template-columns: minmax(110px, 1fr) minmax(110px, 1fr) 85px 85px;
+  }
+  .filters > label:not(:first-child)::before {
+    inset-inline-start: -7px;
+  }
+  .planCard {
+    grid-template-columns: minmax(0, 1.4fr) minmax(175px, 1fr);
+    gap: 12px;
+    padding: 12px;
+  }
+  .inventory {
+    padding-inline-start: 12px;
+  }
+}
+@media (max-width: 900px) {
+  .toolbar {
+    grid-template-columns: 1fr auto;
+    gap: 14px;
+  }
+  .buildingTabs {
+    max-width: 260px;
+  }
+  .filters {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .currency {
+    grid-column: 2;
+    grid-row: 1;
+    width: 130px;
+  }
+  .grid {
+    grid-template-columns: 1fr;
+  }
+  .buildingCard {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 110px;
+  }
+  .floorSelector {
+    border-top: 0;
+    border-inline-start: 1px solid var(--explorer-border);
+    align-content: center;
+    padding: 12px;
+  }
+  .planCanvas {
+    min-height: 270px;
+  }
+}
+@media (max-width: 520px) {
+  .filters {
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 18px;
+  }
+  .filters > label:nth-child(3)::before {
+    display: none;
+  }
+  .toolbar {
+    padding: 12px;
+  }
+  .planCard {
+    grid-template-columns: 1fr;
+  }
+  .inventory {
+    border-inline-start: 0;
+    border-top: 1px solid var(--explorer-border);
+    padding-inline-start: 0;
+    padding-top: 14px;
+  }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+  .apartmentList {
+    max-height: 240px;
+  }
+  .buildingCard {
+    display: flex;
+  }
+  .floorSelector {
+    border-inline-start: 0;
+    border-top: 1px solid var(--explorer-border);
+  }
+}
+.titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 15px;
+}
+.titlebar h1 {
+  font-size: 28px;
+  line-height: 1.25;
+  margin: 0;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+.titleActions {
+  display: flex;
+  gap: 28px;
+  align-items: center;
+  font-size: 10px;
+}
+.titleActions > span {
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.titleActions > button {
+  min-height: 32px;
+  padding: 7px 14px;
+  border-radius: 4px;
+  background: var(--explorer-active);
+  border-color: var(--explorer-active);
+  color: #f6f4e8;
+  font-size: 11px;
+}
+@media (max-width: 520px) {
+  .titlebar {
+    align-items: flex-start;
+  }
+  .titlebar h1 {
+    font-size: 24px;
+  }
+  .titleActions {
+    gap: 8px;
+    flex-direction: column;
+    align-items: flex-end;
+  }
+}
+
+@media (max-width: 680px) {
+  .explorer {
+    padding-inline: 16px;
+  }
+  .titlebar h1 {
+    font-size: 24px;
+  }
+  .titlebar {
+    flex-wrap: wrap;
+  }
+}
+
+.availableToggle input:focus-visible { outline:2px solid var(--text); outline-offset:3px; }

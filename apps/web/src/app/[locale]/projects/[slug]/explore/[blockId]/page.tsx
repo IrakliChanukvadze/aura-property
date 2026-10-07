@@ -5,7 +5,8 @@ import { isLocale } from "@/lib/i18n";
 import { metadata } from "@/lib/seo";
 import { projectBlocks, projectNavigation } from "@/lib/project-navigation";
 import { Explorer } from "@/components/Explorer";
-import { ProjectInquiry } from "@/components/ProjectInquiry";
+import { ChevronRight } from "lucide-react";
+import { t } from "@/lib/i18n";
 type Props = {
   params: Promise<{ locale: string; slug: string; blockId: string }>;
 };
@@ -40,23 +41,22 @@ export default async function Page({ params }: Props) {
   return (
     <>
       <nav
-        className="section"
-        style={{
-          paddingBlock: "24px 0",
-          display: "flex",
-          gap: 20,
-          flexWrap: "wrap",
-        }}
+        className="explorer-breadcrumbs"
         aria-label={projectNavigation(locale).blocks}
       >
+        <Link href={`/${locale}`}>Aura</Link>
+        <ChevronRight size={12} />
+        <Link href={`/${locale}/projects`}>{t(locale).projects}</Link>
+        <ChevronRight size={12} />
         <Link href={`/${locale}/projects/${slug}`}>
-          {projectNavigation(locale).back}
+          {p.translations[locale]?.title || p.translations.en.title}
         </Link>
+        <ChevronRight size={12} />
         <Link href={`/${locale}/projects/${slug}/explore`}>
-          ← {projectNavigation(locale).blocks}
+          {projectNavigation(locale).blocks}
         </Link>
-        <h1 style={{ fontSize: "24px", margin: 0 }}>{block.name}</h1>
-        {!p.soldOut && <ProjectInquiry project={p} locale={locale} />}
+        <ChevronRight size={12} />
+        <span>{block.name}</span>
       </nav>
       <Explorer project={scoped} locale={locale} usdGel={rate?.usdGel} />
     </>

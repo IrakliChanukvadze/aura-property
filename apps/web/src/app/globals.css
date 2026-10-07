@@ -1242,3 +1242,84 @@ select optgroup {
 .block-explorer .section-heading {
   margin-bottom: 20px;
 }
+
+/* AURA-020: selected Product Design explorer surface. */
+.explorer-shell {
+  min-height: 100dvh;
+  background: var(--bg);
+}
+:root[data-theme="dark"] .explorer-shell {
+  --bg: #0a2821;
+  --panel: #103129;
+  --text: #eeeee0;
+  --muted: #b4c3b6;
+  --line: #426357;
+  --accent: #83a37f;
+  --contrast: #102c23;
+  background-image: url("/images/explorer-backdrop.png");
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+.explorer-shell .site-header {
+  height: 64px;
+  padding-inline: 30px;
+  background: transparent;
+  border-color: var(--line);
+}
+.explorer-shell .wordmark {
+  font-size: 32px;
+}
+.explorer-shell .wordmark span {
+  font-size: 6px;
+  margin-top: 3px;
+}
+.explorer-shell .navigation {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  gap: 48px;
+}
+.explorer-shell .header-contact {
+  display: none;
+}
+.explorer-shell .header-tools {
+  gap: 8px;
+}
+.explorer-shell footer {
+  display: none;
+}
+.explorer-breadcrumbs {
+  margin-inline: 30px;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 11px;
+  color: var(--muted);
+  border-bottom: 1px solid var(--line);
+  padding-block: 6px;
+}
+.project-inquiry-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 5px;
+  font-size: 11px;
+  min-height: 32px;
+  padding: 8px 13px;
+  background: var(--accent);
+  color: var(--contrast);
+  border-color: var(--accent);
+}
+@media (max-width: 680px) {
+  .explorer-shell .site-header {
+    padding-inline: 16px;
+  }
+  .explorer-breadcrumbs {
+    margin-inline: 16px;
+    gap: 5px;
+    font-size: 10px;
+  }
+}

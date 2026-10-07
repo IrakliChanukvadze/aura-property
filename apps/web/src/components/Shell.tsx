@@ -13,6 +13,7 @@ export function Shell({
 }) {
   const d = t(locale);
   const path = usePathname();
+  const explorer = /\/projects\/[^/]+\/explore\/[^/]+/.test(path);
   const router = useRouter();
   const [menu, setMenu] = useState(false);
   const [dark, setDark] = useState(false);
@@ -33,10 +34,13 @@ export function Shell({
   function language(value: string) {
     localStorage.setItem("aura-language", value);
     document.cookie = `aura-language=${value};path=/;max-age=31536000;SameSite=Lax`;
-    router.push(path.replace(/^\/(en|ka|ru|he)(?=\/|$)/, `/${value}`));
+    router.push(
+      path.replace(/^\/(en|ka|ru|he)(?=\/|$)/, `/${value}`) +
+        window.location.search,
+    );
   }
   return (
-    <>
+    <div className={explorer ? "explorer-shell" : undefined}>
       <a className="skip-link" href="#main">
         {d.skipContent}
       </a>
@@ -114,6 +118,6 @@ export function Shell({
           <span>Georgia · Tbilisi / Batumi</span>
         </div>
       </footer>
-    </>
+    </div>
   );
 }
