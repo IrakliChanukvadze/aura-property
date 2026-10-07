@@ -4,6 +4,7 @@ import { X, ArrowUpRight } from "lucide-react";
 import { type Project, type Unit, money, totalPrice } from "@/lib/api";
 import { type Locale, t } from "@/lib/i18n";
 import { InquiryForm } from "./InquiryForm";
+import styles from "./Explorer.module.css";
 export function Explorer({
   project,
   locale,
@@ -27,6 +28,20 @@ export function Explorer({
   const [maxArea, setMaxArea] = useState("");
   const [beds, setBeds] = useState("");
   const [only, setOnly] = useState(false);
+  const blocks =
+    project.metadata?.blocks?.filter(
+      (block) =>
+        block.polygon?.length >= 3 &&
+        block.buildingIds?.some((id) =>
+          project.buildings.some((building) => building.id === id),
+        ),
+    ) || [];
+  const selectBuilding = (index: number) => {
+    setBuildingIndex(index);
+    setFloorIndex(0);
+    setUnit(null);
+    setInquire(false);
+  };
   const dialog = useRef<HTMLDialogElement>(null);
   const [selectionReady, setSelectionReady] = useState(false);
   useEffect(() => {
@@ -106,6 +121,52 @@ export function Explorer({
           ))}
         </div>
       </div>
+      {blocks.length > 0 && (
+        <div className={styles.overview}>
+          <img
+            src={project.coverImage}
+            alt={project.translations[locale]?.title || project.slug}
+            draggable={false}
+          />
+          <svg
+            viewBox="0 0 100 100"
+            preserveAspectRatio="none"
+            aria-label={project.translations[locale]?.title || project.slug}
+          >
+            {blocks.map((block) => {
+              const selected = block.buildingIds.includes(building.id);
+              const select = () =>
+                selectBuilding(
+                  project.buildings.findIndex((item) =>
+                    block.buildingIds.includes(item.id),
+                  ),
+                );
+              return (
+                <polygon
+                  key={block.id}
+                  points={block.polygon
+                    .map((point) => point.join(","))
+                    .join(" ")}
+                  className={`floor-polygon ${selected ? "selected" : ""}`}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={block.name}
+                  aria-pressed={selected}
+                  onClick={select}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      select();
+                    }
+                  }}
+                >
+                  <title>{block.name}</title>
+                </polygon>
+              );
+            })}
+          </svg>
+        </div>
+      )}
       <div className="filters">
         <label>
           {d.price} ({currency})
@@ -176,8 +237,7 @@ export function Explorer({
               className="button"
               key={b.id}
               onClick={() => {
-                setBuildingIndex(i);
-                setFloorIndex(0);
+                selectBuilding(i);
               }}
               aria-pressed={i === buildingIndex}
             >
@@ -232,63 +292,71 @@ export function Explorer({
             ))}
           </div>
           <div className="floor-plan">
-            <img
-              src={floor.image}
-              alt={`${d.floor} ${floor.number} — apartment floor plan`}
-              draggable={false}
-            />
+            {floor.image ? (
+              <img
+                src={floor.image}
+                alt={`${d.floor} ${floor.number} — apartment floor plan`}
+                draggable={false}
+              />
+            ) : (
+              <p className="notice">{d.loadingPlans}</p>
+            )}
             <svg
               viewBox="0 0 100 100"
               preserveAspectRatio="none"
               aria-label={d.plan}
             >
-              {floor.units.map((u) => (
-                <g key={u.id}>
-                  <polygon
-                    points={u.polygon.map((p) => p.join(",")).join(" ")}
-                    className={`unit-polygon ${u.status.toLowerCase()} ${matches(u) ? "" : "muted"}`}
-                    tabIndex={
-                      u.status === "AVAILABLE" && matches(u) ? 0 : undefined
-                    }
-                    role={
-                      u.status === "AVAILABLE" && matches(u)
-                        ? "button"
-                        : undefined
-                    }
-                    aria-label={`${u.number}, ${u.area} m², ${d[u.status.toLowerCase() as "available" | "reserved" | "sold"]}`}
-                    onClick={() => {
-                      if (u.status === "AVAILABLE" && matches(u)) {
-                        setUnit(u);
-                        setInquire(false);
+              {floor.units
+                .filter((u) => u.polygon.length >= 3)
+                .map((u) => (
+                  <g key={u.id}>
+                    <polygon
+                      points={u.polygon.map((p) => p.join(",")).join(" ")}
+                      className={`unit-polygon ${u.status.toLowerCase()} ${matches(u) ? "" : "muted"}`}
+                      tabIndex={
+                        u.status === "AVAILABLE" && matches(u) ? 0 : undefined
                       }
-                    }}
-                    onKeyDown={(e) => {
-                      if (
-                        u.status === "AVAILABLE" &&
-                        matches(u) &&
-                        (e.key === "Enter" || e.key === " ")
-                      ) {
-                        e.preventDefault();
-                        setUnit(u);
-                        setInquire(false);
+                      role={
+                        u.status === "AVAILABLE" && matches(u)
+                          ? "button"
+                          : undefined
                       }
-                    }}
-                  />
-                  <text
-                    pointerEvents="none"
-                    x={
-                      u.polygon.reduce((a, p) => a + p[0], 0) / u.polygon.length
-                    }
-                    y={
-                      u.polygon.reduce((a, p) => a + p[1], 0) / u.polygon.length
-                    }
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                  >
-                    {u.number}
-                  </text>
-                </g>
-              ))}
+                      aria-label={`${u.number}, ${u.area} m², ${d[u.status.toLowerCase() as "available" | "reserved" | "sold"]}`}
+                      onClick={() => {
+                        if (u.status === "AVAILABLE" && matches(u)) {
+                          setUnit(u);
+                          setInquire(false);
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (
+                          u.status === "AVAILABLE" &&
+                          matches(u) &&
+                          (e.key === "Enter" || e.key === " ")
+                        ) {
+                          e.preventDefault();
+                          setUnit(u);
+                          setInquire(false);
+                        }
+                      }}
+                    />
+                    <text
+                      pointerEvents="none"
+                      x={
+                        u.polygon.reduce((a, p) => a + p[0], 0) /
+                        u.polygon.length
+                      }
+                      y={
+                        u.polygon.reduce((a, p) => a + p[1], 0) /
+                        u.polygon.length
+                      }
+                      textAnchor="middle"
+                      dominantBaseline="middle"
+                    >
+                      {u.number}
+                    </text>
+                  </g>
+                ))}
             </svg>
           </div>
           <div className="plan-legend">
@@ -354,7 +422,18 @@ export function Explorer({
             <h2 id="unit-title">
               {d.details} #{unit.number}
             </h2>
-            <img src={floor.image} alt={d.apartmentPlan} />
+            <div className={styles.unitImages}>
+              {(unit.details?.photos?.length
+                ? unit.details.photos
+                : [floor.image]
+              ).map((photo, index) => (
+                <img
+                  key={`${photo}-${index}`}
+                  src={photo}
+                  alt={`${d.apartmentPlan} #${unit.number}${index ? ` · ${index + 1}` : ""}`}
+                />
+              ))}
+            </div>
             <div className="unit-facts">
               <div>
                 <span>{d.totalArea}</span>

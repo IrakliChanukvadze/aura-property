@@ -1,0 +1,34 @@
+.overview {
+  position: relative;
+  max-width: 960px;
+  margin: 0 auto 32px;
+}
+.overview > img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.overview > svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.overview polygon:focus-visible {
+  outline: none;
+  stroke: white;
+  stroke-width: 0.6;
+  fill: #d7e5b3aa;
+}
+.unitImages {
+  display: grid;
+  gap: 16px;
+  margin-block: 20px;
+}
+.unitImages img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 70vh;
+  object-fit: contain;
+}

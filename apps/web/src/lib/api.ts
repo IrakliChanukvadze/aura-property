@@ -15,6 +15,7 @@ export interface Unit {
   priceCurrency: "USD" | "GEL";
   priceMode: "TOTAL" | "PER_M2";
   showPrice: boolean;
+  details?: { photos?: string[]; [key: string]: unknown };
 }
 export interface Floor {
   id: string;
@@ -28,6 +29,15 @@ export interface Project {
   slug: string;
   city: string;
   coverImage: string;
+  metadata?: {
+    blocks?: {
+      id: string;
+      name: string;
+      polygon: number[][];
+      buildingIds: string[];
+    }[];
+    [key: string]: unknown;
+  };
   constructionStatus: "ONGOING" | "COMPLETED";
   translations: Record<Locale, Translation>;
   buildings: {
@@ -167,18 +177,9 @@ async function get<T>(path: string, fallback: T): Promise<T> {
     return fallback;
   }
 }
-export const projects = () =>
-  get<Project[]>(
-    "projects",
-    process.env.NODE_ENV === "production" ? [] : demoProjects,
-  );
+export const projects = () => get<Project[]>("projects", []);
 export async function project(slug: string) {
-  return get<Project | null>(
-    `projects/${encodeURIComponent(slug)}`,
-    process.env.NODE_ENV === "production"
-      ? null
-      : demoProjects.find((p) => p.slug === slug) || null,
-  );
+  return get<Project | null>(`projects/${encodeURIComponent(slug)}`, null);
 }
 export const posts = () => get<Post[]>("posts", []);
 export const post = (slug: string) =>

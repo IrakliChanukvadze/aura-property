@@ -34,7 +34,12 @@ export function InquiryForm({
     (a, b) => a - b,
   );
   const sizes = [
-    ...new Set(floors.flatMap((f) => f.units).map((u) => u.area)),
+    ...new Set(
+      floors
+        .flatMap((f) => f.units)
+        .filter((u) => u.area > 0)
+        .map((u) => u.area),
+    ),
   ].sort((a, b) => a - b);
   async function request(path: string, data: Record<string, unknown>) {
     const response = await fetch(`${apiBase}/public/${path}`, {
