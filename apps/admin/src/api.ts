@@ -20,7 +20,7 @@ export async function api<T = any>(
       method,
       credentials: "include",
       headers:
-        body instanceof FormData
+        body === undefined || body instanceof FormData
           ? undefined
           : { "Content-Type": "application/json" },
       body:

@@ -84,17 +84,12 @@ export async function authRoutes(app: FastifyInstance) {
   app.get("/api/auth/me", { preHandler: authenticate }, async (req) => ({
     data: { ...safe(req.actor), actingLead: await acting(req.actor) },
   }));
-  app.post(
-    "/api/auth/logout",
-    { preHandler: authenticate },
-    async (req, reply) => {
-      await db.session.deleteMany({
-        where: { id: digest((req.cookies as any).aura_session) },
-      });
-      reply.clearCookie("aura_session", { path: "/" });
-      return { data: true };
-    },
-  );
+  app.post("/api/auth/logout", async (req, reply) => {
+    const token = (req.cookies as any).aura_session;
+    if (token) await db.session.deleteMany({ where: { id: digest(token) } });
+    reply.clearCookie("aura_session", { path: "/" });
+    return { data: true };
+  });
   app.post("/api/auth/password", { preHandler: authenticate }, async (req) => {
     const b = z
       .object({ currentPassword: z.string(), newPassword: z.string().min(12) })

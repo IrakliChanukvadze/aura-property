@@ -824,3 +824,15 @@ test("per-user content grants and logout apply on the server", async () => {
   assert.equal(logout.statusCode, 200);
   assert.equal((await request(editor, "GET", "/api/auth/me")).statusCode, 401);
 });
+
+test("bodyless browser logout clears session and repeated logout succeeds", async () => {
+  const agent = await account("AGENT");
+  const logout = await request(agent, "POST", "/api/auth/logout");
+  assert.equal(logout.statusCode, 200, logout.body);
+  assert.match(String(logout.headers["set-cookie"]), /aura_session=;/);
+  assert.equal((await request(agent, "GET", "/api/auth/me")).statusCode, 401);
+  assert.equal(
+    (await request(agent, "POST", "/api/auth/logout")).statusCode,
+    200,
+  );
+});
