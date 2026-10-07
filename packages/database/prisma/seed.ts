@@ -123,10 +123,14 @@ const buildings = [
     })),
   },
 ];
-for (const [id, slug, city, title] of [
-  ["vake", "vake-gardens", "Tbilisi", "Preview · Vake Gardens"],
-  ["batumi", "batumi-horizon", "Batumi", "Preview · Batumi Horizon"],
-]) {
+for (const [id, slug, city, title] of (await db.project.findUnique({
+  where: { id: "pini-boulevard-copy" },
+}))
+  ? []
+  : [
+      ["vake", "vake-gardens", "Tbilisi", "Preview · Vake Gardens"],
+      ["batumi", "batumi-horizon", "Batumi", "Preview · Batumi Horizon"],
+    ]) {
   const translations: any = Object.fromEntries(
     languages.map((l) => [
       l,

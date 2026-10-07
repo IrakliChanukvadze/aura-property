@@ -6,7 +6,7 @@ This is Aura Property, independent from DealerTrades and Pini. Read README.md an
 Confirmed decisions outrank proposals. Explicit owner instructions outrank this file. Keep this file short; put business detail in the product documents. Record changed decisions with a superseding entry rather than silently erasing history.
 
 ## Reference boundary
-Pini at /Users/iraklismac/code/pini is a read-only source reference. The owner authorized copying its complex-upload tools, building/floor/apartment explorer logic, and complex/apartment inquiry behavior into Aura. Do not copy unrelated functionality, credentials, personal data, production configuration, or live inventory. No Pini runtime connection is authorized or required. Aura UI and layout may differ.
+Pini at /Users/iraklismac/code/pini is a read-only source reference. The owner authorized copying its complex-upload tools, building/floor/apartment explorer logic, and complex/apartment inquiry behavior into Aura. Do not copy unrelated functionality, credentials, personal data, production configuration, or live inventory. No Pini runtime connection is required. On 2026-10-07 the owner additionally authorized a one-time, read-only production inventory/media copy for Tbilisi Boulevard; other live data remains outside scope. Aura UI and layout may differ.
 
 ## Orchestration
 The owner authorizes this agent to orchestrate specialist subagents for the Aura project. Delegate bounded tasks with explicit file ownership, inputs, acceptance criteria, and expected evidence. Keep dependent integration steps sequential. Coordinate agents that need shared files. Integrate and review their work before reporting completion; an agent self-report alone is not verification.
