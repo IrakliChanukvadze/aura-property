@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { MotionSystem } from "./MotionSystem";
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { ArrowUpRight, Menu, Sun, Moon, X } from "lucide-react";
@@ -13,6 +14,7 @@ export function Shell({
 }) {
   const d = t(locale);
   const path = usePathname();
+  const home = /^\/(en|ka|ru|he)\/?$/.test(path);
   const explorer = /\/projects\/[^/]+\/explore\/[^/]+/.test(path);
   const router = useRouter();
   const [menu, setMenu] = useState(false);
@@ -40,7 +42,12 @@ export function Shell({
     );
   }
   return (
-    <div className={explorer ? "explorer-shell" : undefined}>
+    <div
+      className={
+        explorer ? "explorer-shell" : home ? "cinematic-shell" : undefined
+      }
+    >
+      <MotionSystem />
       <a className="skip-link" href="#main">
         {d.skipContent}
       </a>

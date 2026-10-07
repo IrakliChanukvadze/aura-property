@@ -1,0 +1,197 @@
+/* Aura cinematic motion. Content and native scrolling work without JavaScript. */
+.reading-progress {
+  position: fixed;
+  z-index: 80;
+  inset-block-start: 0;
+  inset-inline: 0;
+  height: 2px;
+  pointer-events: none;
+  background: var(--gold);
+  transform: scaleX(var(--page-progress, 0));
+  transform-origin: left;
+}
+[dir="rtl"] .reading-progress {
+  transform-origin: right;
+}
+.cinematic-shell .site-header {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 0;
+  height: 102px;
+  border: 0;
+  color: #f5f1e8;
+  background: transparent;
+  padding-inline: 7.5%;
+}
+.cinematic-shell .header-tools select {
+  color: #f5f1e8;
+}
+.cinematic-shell .navigation a::after {
+  background: currentColor;
+}
+.cinematic-shell .header-contact {
+  border-color: #f5f1e850;
+  min-width: 154px;
+  white-space: nowrap;
+  justify-content: space-between;
+}
+.cinematic-shell .site-header .wordmark {
+  font-size: 56px;
+}
+.cinematic-shell .footer {
+  background: var(--panel);
+}
+[data-reveal],
+.section-heading,
+.page-intro,
+.services article,
+.post-card,
+.project-intro > * {
+  transition:
+    opacity 700ms ease,
+    translate 850ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.motion-pending {
+  opacity: 0;
+  translate: 0 28px;
+}
+.motion-visible {
+  opacity: 1;
+  translate: none;
+}
+.motion-pending:focus-within {
+  opacity: 1;
+  translate: none;
+}
+.button svg,
+.text-link svg,
+.header-contact svg {
+  transition: transform 350ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.button:hover svg,
+.text-link:hover svg,
+.header-contact:hover svg {
+  transform: translate(3px, -3px);
+}
+.site-header .icon-button svg {
+  transition: rotate 450ms;
+}
+.site-header .icon-button:hover svg {
+  rotate: 25deg;
+}
+.project-card {
+  perspective: 1100px;
+}
+.project-card .project-image {
+  transform: rotateX(var(--depth-x, 0deg)) rotateY(var(--depth-y, 0deg));
+  transition:
+    transform 450ms cubic-bezier(0.2, 0.7, 0.2, 1),
+    box-shadow 450ms;
+}
+.project-card[data-pointer-active] .project-image {
+  box-shadow: 0 25px 50px -30px #0009;
+}
+.project-card:focus-visible .project-image img {
+  transform: scale(1.045);
+}
+.project-card:hover .card-arrow {
+  transform: rotate(0deg) translate(2px, -2px);
+}
+.project-hero {
+  overflow: hidden;
+  isolation: isolate;
+}
+.project-hero > img {
+  transform: translateY(var(--scroll-shift, 0px)) scale(1.13);
+  transform-origin: center;
+}
+.project-hero > div > h1 {
+  animation: aura-title-in 1050ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.project-hero > div > .eyebrow {
+  animation: aura-title-in 800ms 100ms both;
+}
+.project-hero .hero-explore-link {
+  display: inline-flex;
+  margin: 30px 0 0;
+  min-height: 50px;
+  font-size: 12px;
+  color: #20291d;
+  background: #e5d4ac;
+  border-color: #e5d4ac;
+}
+.project-hero > div > a:not(.hero-explore-link) {
+  margin-bottom: 36px;
+}
+.project-hero:after {
+  pointer-events: none;
+}
+.floor-polygon {
+  transition:
+    fill 220ms,
+    stroke 220ms;
+}
+.unit-polygon.available {
+  transition:
+    fill 220ms,
+    stroke 220ms;
+}
+/* Floor plans remain still: moving hit targets would make selection unreliable. */
+@keyframes aura-title-in {
+  from {
+    opacity: 0;
+    translate: 0 22px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+@media (max-width: 760px) {
+  .cinematic-shell .site-header {
+    height: 80px;
+    padding-inline: 22px;
+  }
+  .cinematic-shell .site-header .wordmark {
+    font-size: 44px;
+  }
+  .cinematic-shell .navigation.open {
+    background: var(--bg);
+    color: var(--text);
+  }
+  .cinematic-shell .header-tools {
+    gap: 6px;
+  }
+  .project-hero .hero-explore-link {
+    margin-top: 20px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+  .motion-pending {
+    opacity: 1;
+    translate: none;
+  }
+  .reading-progress {
+    display: none;
+  }
+  .project-card .project-image,
+  .project-card:hover img,
+  .project-card .card-arrow,
+  .project-hero > img,
+  .button:hover,
+  .button svg,
+  .text-link svg,
+  .header-contact svg {
+    transform: none !important;
+  }
+}

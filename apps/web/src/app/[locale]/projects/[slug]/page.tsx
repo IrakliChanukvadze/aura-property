@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowUpRight } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
 import { project } from "@/lib/api";
 import { isLocale, t } from "@/lib/i18n";
@@ -61,7 +62,7 @@ export default async function Page({
   }
   return (
     <>
-      <section className="project-hero">
+      <section className="project-hero" data-parallax="hero" data-speed="0.16">
         <img src={p.coverImage} alt={p.translations[locale].title} />
         <div>
           <Link href={`/${locale}/projects`}>{d.back}</Link>
@@ -70,6 +71,13 @@ export default async function Page({
             {p.constructionStatus === "COMPLETED" ? d.completed : d.ongoing}
           </p>
           <h1>{p.translations[locale].title}</h1>
+          <Link
+            className="button hero-explore-link"
+            href={`/${locale}/projects/${slug}/explore`}
+          >
+            {projectNavigation(locale).explore}
+            <ArrowUpRight size={18} />
+          </Link>
         </div>
       </section>
       <section className="project-intro section">

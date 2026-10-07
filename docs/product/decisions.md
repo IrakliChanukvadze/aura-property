@@ -432,3 +432,5 @@ Source for confirmed entries: owner conversation in this Codex chat.
 | D-229 | Confirmed clarification | Deactivation immediately blocks login and invalidates existing sessions automatically; enforce server-side. |
 
 | D-230 | Confirmed direction | Public light/dark modes, animations and restrained premium details. Initial editorial direction liked; agency-wide hero still under discussion. |
+
+| D-231 | Confirmed design update, 2026-10-07 | Owner selected the first cinematic homepage concept and requested richer scroll animations and depth. A longer editorial homepage is approved, superseding the earlier preference for a short landing page. Retain separate project introduction, whole-complex overview and block/floor exploration URLs; keep both configurable hero approaches. Selected visual and implementation evidence are recorded in AURA-022. |

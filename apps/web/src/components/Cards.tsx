@@ -13,7 +13,12 @@ export function ProjectCard({
 }) {
   const d = t(locale);
   return (
-    <Link href={`/${locale}/projects/${p.slug}`} className="project-card">
+    <Link
+      href={`/${locale}/projects/${p.slug}`}
+      className="project-card"
+      data-depth
+      data-reveal
+    >
       <div className="project-image">
         <img
           src={p.coverImage}

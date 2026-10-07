@@ -1,43 +1,44 @@
-# Explorer design QA
+# Cinematic homepage design QA — AURA-022
 
-- Source visual truth: docs/design/references/explorer-selected.png (selected Higgsfield mockup, 1344×752 pixels).
-- Implementation: docs/design/qa/explorer-desktop.jpg (1344×752 pixels; CSS viewport1344×752, density1). No density normalization needed for final full-view comparison.
-- State: English, dark, Block E/A, Floor4, default filters; source also dark/Floor4 but uses fictional Evergreen/Riverside inventory.
-- Full-view comparison: docs/design/qa/explorer-comparison.png (source left / implementation right).
-- Focused control comparison: docs/design/qa/explorer-controls-comparison.png (source above / implementation below); required because labels/controls are small in full view.
-- Mobile: 390×844 CSS, docs/design/qa/explorer-mobile-he.jpg and explorer-mobile-light.jpg; horizontal document width equals viewport.
+final result: passed
 
-## Findings and comparison history
+## Reference and rendered evidence
 
-1. Initial capture found P1 outer content at viewport edges rather than source30px margins, and P2 availability toggle inheriting a44px input minimum. Fixed scoped margins/padding and explicit19px toggle height. Compared revised capture with source at the same viewport.
-2. Revised capture found P2 compact label legibility/active fill contrast and sidebar title repeating the main heading. Raised filter/sidebar text, added localized Apartments title, darker active label text and visible toggle keyboard focus. Final full and focused comparisons opened together after changes.
-3. No remaining actionable P0/P1/P2 layout findings in the selected scope. Real building/plan proportions differ intentionally: authoritative Boulevard images and normalized polygons were preserved instead of substituting fictitious reference inventory. Actual floor plans retain their white backgrounds and source aspect ratios; no crop/stretch/reannotation was applied.
+- Selected direction: docs/design/references/cinematic-home-selected.png, 1015×1549 source pixels. Owner selected the first cinematic concept and asked to develop it further with scroll animation.
+- Desktop viewport: 1440×900 CSS pixels, density 1, English, dark mode. Final hero: docs/design/qa/cinematic-desktop.jpg. Full document: cinematic-full.jpg, 1440×3540 pixels.
+- Combined full comparison: docs/design/qa/cinematic-comparison.jpg. Source on left, implementation on right; each normalized to 720 pixels wide while retaining proportions. Opened and visually reviewed after final CSS fixes.
+- Focused hero comparison: cinematic-hero-comparison.jpg; source crop covers the hero, implementation uses the settled first viewport. Opened and reviewed. The responsive implementation uses a full viewport hero rather than the reference's shorter static hero.
+- Collection screenshot: cinematic-collection.jpg, at the collection anchor with the image expanded. The full document screenshot records one scroll state; offscreen parallax/expansion transforms are not a static layout specification.
+- Mobile evidence: cinematic-mobile-dark.jpg, cinematic-mobile-light.jpg and cinematic-mobile-he.jpg, 390×844. Dark mobile capture predates the final foliage overscan and support-copy size refinements; light/Hebrew captures follow those refinements.
+- Prior explorer QA is preserved in docs/design/qa/explorer-design-qa.md.
 
 ## Required fidelity surfaces
 
-- Fonts/typography: compact28px Georgia serif title, restrained sans-serif controls/sidebar, localized fallback fonts; removed oversized display heading. Aura wordmark retained intentionally instead of Evergreen.
-- Spacing/layout rhythm:64px header,30px content gutters, compact breadcrumb/title, single framed toolbar,36/64 main split and side-by-side plan/inventory. Building floors stay under the image; cards share top/bottom framing.
-- Colors/tokens: dark evergreen/sage/ivory, fine raster textured backdrop generated from selected source, muted borders,6px corners. Light theme uses existing accessible light palette. Small active labels use dark text for contrast.
-- Image quality: generated empty backdrop supplied as raster asset; real local Boulevard photos/plans preserved. SVG is existing functional annotation geometry, not decorative image replacement. Image and polygon bounds remain aligned.
-- Copy/content: actual project/block/unit/status/price data and four-language labels replace reference sample data. Missing area/room values use dash in list rather than false zero.
+1. Typography: large two-line serif hero, restrained sans-serif supporting copy, numbered editorial project title, asymmetric agency heading. Georgian/Russian sizing and Hebrew RTL have dedicated responsive treatment.
+2. Spacing/layout: transparent overlay header; full viewport image hero; wide project panorama; agency portrait/copy split. Existing services, CMS journal and contact content continue below the reference composition. Mobile stacks without horizontal overflow.
+3. Color: evergreen, ivory and warm gold follow the selected direction. Light mode uses ivory surfaces with dark green type. Contrast overlays remain behind hero copy and controls.
+4. Images: original approved cityscape retained, with a separate generated transparent foliage layer and illustrative lifestyle portrait. Real Boulevard cover, apartment plans and polygon coordinates remain authoritative. The lifestyle portrait does not represent a named team member.
+5. Content: actual localized CMS project title, construction status, price and description replace reference sample copy. The current journal contains one seed post without a cover; no fake articles or inventory were introduced to resemble the mockup.
 
-## Interactions and console
+## Findings and fixes
 
-- Floor4 selection updates shared URL; available apartment polygon opens A401 details; Available only removes disabled sold rows; inquiry modal remains functional.
-- Sold/reserved polygons and rows remain non-interactive.
-- Mobile layout stacks toolbar/cards without horizontal overflow; Hebrew route mirrors RTL. Light/dark toggle checked.
-- Final browser error log empty. Language-control navigation was not independently accepted as verified; direct locale routes were used for RTL evidence.
+- Header contact text wrapped at desktop width: increased minimum width and prevented wrapping.
+- Foliage lower edge could become visible during parallax: added bottom overscan; checked final hero and collection transition.
+- Supporting project/service/agency copy too small: increased to 14–15px with comfortable line height.
+- Expanding image could clip an external keyboard outline: added a 3px inset focus ring and removed clipping while focused. Browser Tab check confirmed the focused project link, computed outline and clip-path:none.
+- Chapter indicator selector disagreed with aria-current=location: corrected the CSS selector and initial fallback. Independent review also checked motion cleanup, CMS overrides and localization.
+- No outstanding P0/P1/P2 visual or interaction findings in this scope. Photo crop, real project geometry, CMS journal population and longer content are intentional differences from the generated concept.
 
-## Implementation checklist
+## Verified interactions
 
-- [x] Match selected layout and background direction.
-- [x] Preserve functional inventory and routes.
-- [x] Fix alignment, toggle and text contrast findings.
-- [x] Capture/compare final same-size source/render and focused controls.
-- [x] Check mobile/RTL/light and core interactions.
+- Hero collection link uses native scrolling; chapter state and scroll CSS variables update. All below-fold content becomes visible. Document width equals the desktop and mobile viewport widths.
+- Mobile menu, dark/light toggle and Hebrew RTL checked. Language switch from Hebrew to Georgian navigated successfully after waiting for the Next route transition.
+- New homepage project link → project hero Explore project → whole-complex overview → Block E SVG polygon → floor 4 → Available only → A401 polygon → correct apartment dialog and URL.
+- No browser console errors in homepage or project-flow checks.
+- Typecheck: npm run typecheck -w @aura/web passed. Production build: npm run build -w @aura/web passed; all existing project/explorer routes remain available. Local development services restarted afterward.
 
-## Follow-up polish
+## Motion and limitations
 
-P3: reference uses a tall square fictional plan and nine floors; actual wide plan and six floors produce different internal image density. Browser development indicator appears only in dev preview. Native range inputs remain numeric rather than reference dropdowns to retain arbitrary price/area entry.
+Native scrolling, event-driven requestAnimationFrame updates, one-time intersection reveals, pointer depth limited to fine pointers, and observer/listener cleanup were code-reviewed. Primary content is server-rendered and visible before JavaScript enhancement. Reduced-motion CSS and preference handling were code-reviewed; OS-level reduced-motion emulation was unavailable in the browser tool and is not claimed as a live browser test. No frame-rate benchmark was performed. Interactive floor-plan geometry stays stationary.
 
-final result: passed
+Implemented and locally verified; not deployed to production.

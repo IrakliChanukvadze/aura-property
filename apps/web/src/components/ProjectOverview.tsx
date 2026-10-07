@@ -32,7 +32,7 @@ export function ProjectOverview({
           <h1>{copy.choose}</h1>
         </div>
       </div>
-      <div className={styles.cover}>
+      <div className={styles.cover} data-depth data-reveal>
         <img
           src={project.coverImage}
           alt={
