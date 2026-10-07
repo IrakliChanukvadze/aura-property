@@ -23,6 +23,13 @@ export function Explorer({
     he: "דירות",
   }[locale];
   const [buildingIndex, setBuildingIndex] = useState(0);
+  const [hoveredFloor, setHoveredFloor] = useState<string | null>(null);
+  const buildingLabel = {
+    en: "Building",
+    ka: "კორპუსი",
+    ru: "Корпус",
+    he: "בניין",
+  }[locale];
   const building = project.buildings[buildingIndex];
   const [floorIndex, setFloorIndex] = useState(0);
   const floor = building?.floors[floorIndex];
@@ -35,9 +42,9 @@ export function Explorer({
   const [maxArea, setMaxArea] = useState("");
   const [beds, setBeds] = useState("");
   const [only, setOnly] = useState(false);
-  const selectBuilding = (index: number) => {
-    setBuildingIndex(index);
-    setFloorIndex(0);
+  const selectFloor = (nextBuilding: number, nextFloor: number) => {
+    setBuildingIndex(nextBuilding);
+    setFloorIndex(nextFloor);
     setUnit(null);
     setInquire(false);
   };
@@ -78,6 +85,16 @@ export function Explorer({
     else dialog.current?.close();
   }, [unit]);
   if (!building || !floor) return <p className="notice">{d.loadingPlans}</p>;
+  // Floor coordinates belong to their source image. Only combine matching covers.
+  const imageBuildings = project.buildings
+    .map((b, index) => ({ building: b, index }))
+    .filter(({ building: b }) => b.coverImage === building.coverImage);
+  const needsBuildingSelector = project.buildings.some(
+    (b) =>
+      b.floors.length > 0 &&
+      (b.coverImage !== building.coverImage ||
+        !b.floors.some((f) => f.polygon.length >= 3)),
+  );
   const converted = (u: Unit) =>
     u.priceCurrency === currency
       ? totalPrice(u)
@@ -104,23 +121,10 @@ export function Explorer({
       <div className={styles.titlebar}>
         <h1>{d.plan}</h1>
         <div className={styles.titleActions}>
-          <span>{building.name}</span>
           <ProjectInquiry project={project} locale={locale} />
         </div>
       </div>
       <div className={styles.toolbar}>
-        <div className={styles.buildingTabs} aria-label={building.name}>
-          {project.buildings.map((b, i) => (
-            <button
-              key={b.id}
-              onClick={() => selectBuilding(i)}
-              aria-pressed={i === buildingIndex}
-              title={b.name}
-            >
-              {b.name.includes("/") ? b.name.split("/").at(-1)?.trim() : b.name}
-            </button>
-          ))}
-        </div>
         <div className={styles.filters}>
           <label>
             {d.price} ({currency})
@@ -199,43 +203,79 @@ export function Explorer({
       <div className={styles.grid}>
         <div className={styles.buildingCard}>
           <div className={styles.buildingImage}>
-            <img src={building.coverImage} alt={building.name} />
+            <img
+              src={building.coverImage}
+              alt={imageBuildings.map(({ building: b }) => b.name).join(" · ")}
+            />
             <svg
               viewBox="0 0 100 100"
               preserveAspectRatio="none"
-              aria-label={`${d.floor} — ${building.name}`}
+              aria-label={`${buildingLabel} · ${d.floor}`}
             >
-              {building.floors.map((f, i) => (
-                <polygon
-                  key={f.id}
-                  points={f.polygon.map((p) => p.join(",")).join(" ")}
-                  tabIndex={0}
-                  role="button"
-                  aria-label={`${d.floor} ${f.number}`}
-                  aria-pressed={floorIndex === i}
-                  className={
-                    floorIndex === i
-                      ? "floor-polygon selected"
-                      : "floor-polygon"
-                  }
-                  onClick={() => setFloorIndex(i)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      setFloorIndex(i);
-                    }
-                  }}
-                />
-              ))}
+              {imageBuildings.flatMap(({ building: b, index: bi }) =>
+                b.floors.map((f, fi) => {
+                  if (f.polygon.length < 3) return null;
+                  const label = `${b.name} · ${d.floor} ${f.number}`;
+                  const selected = buildingIndex === bi && floorIndex === fi;
+                  return (
+                    <polygon
+                      key={f.id}
+                      points={f.polygon.map((p) => p.join(",")).join(" ")}
+                      tabIndex={0}
+                      role="button"
+                      aria-label={label}
+                      aria-pressed={selected}
+                      className={`floor-polygon${selected ? " selected" : ""}`}
+                      onMouseEnter={() => setHoveredFloor(label)}
+                      onMouseLeave={() => setHoveredFloor(null)}
+                      onFocus={() => setHoveredFloor(label)}
+                      onBlur={() => setHoveredFloor(null)}
+                      onClick={() => selectFloor(bi, fi)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          selectFloor(bi, fi);
+                        }
+                      }}
+                    />
+                  );
+                }),
+              )}
             </svg>
+            {hoveredFloor && (
+              <span className={styles.floorHint} aria-hidden="true">
+                {hoveredFloor}
+              </span>
+            )}
           </div>
           <div className={styles.floorSelector}>
-            <span>{d.floor}</span>
+            <div className={styles.floorContext}>
+              {needsBuildingSelector ? (
+                <select
+                  aria-label={buildingLabel}
+                  value={buildingIndex}
+                  onChange={(e) => {
+                    selectFloor(Number(e.target.value), 0);
+                    setHoveredFloor(null);
+                  }}
+                >
+                  {project.buildings.map((b, i) => (
+                    <option key={b.id} value={i} disabled={!b.floors.length}>
+                      {b.name}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <span aria-live="polite">{building.name}</span>
+              )}
+              <span>{d.floor}</span>
+            </div>
             {building.floors.map((f, i) => (
               <button
                 className={floorIndex === i ? "selected" : ""}
                 aria-pressed={floorIndex === i}
-                onClick={() => setFloorIndex(i)}
+                aria-label={`${building.name} · ${d.floor} ${f.number}`}
+                onClick={() => selectFloor(buildingIndex, i)}
                 key={f.id}
               >
                 {f.number}

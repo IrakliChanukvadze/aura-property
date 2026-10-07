@@ -434,3 +434,5 @@ Source for confirmed entries: owner conversation in this Codex chat.
 | D-230 | Confirmed direction | Public light/dark modes, animations and restrained premium details. Initial editorial direction liked; agency-wide hero still under discussion. |
 
 | D-231 | Confirmed design update, 2026-10-07 | Owner selected the first cinematic homepage concept and requested richer scroll animations and depth. A longer editorial homepage is approved, superseding the earlier preference for a short landing page. Retain separate project introduction, whole-complex overview and block/floor exploration URLs; keep both configurable hero approaches. Selected visual and implementation evidence are recorded in AURA-022. |
+
+| D-232 | Confirmed explorer update, 2026-10-07 | Remove A/B tabs from the filter bar. Buildings sharing a cover image expose their floor hover/click regions simultaneously; clicking a region selects its building and floor together. Retain compact selection context beside floor controls and fallback access when images/annotations differ. |
