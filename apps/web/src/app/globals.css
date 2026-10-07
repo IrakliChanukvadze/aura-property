@@ -597,11 +597,17 @@ select optgroup {
   height: 100%;
 }
 .floor-polygon {
+  outline: none;
   fill: #b2c69322;
   stroke: #f3edd877;
   stroke-width: 0.25;
   cursor: pointer;
   transition: fill 0.2s;
+}
+.floor-polygon:focus-visible {
+  outline: none;
+  stroke: var(--gold);
+  stroke-width: 0.8;
 }
 .floor-polygon:hover,
 .floor-polygon.selected {
