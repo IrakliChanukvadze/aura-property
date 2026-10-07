@@ -29,7 +29,7 @@ const leader = await db.user.upsert({
     name: "Nino Demo",
     role: "TEAM_LEAD",
     passwordHash: hash(),
-    contentEdit: true,
+    contentEdit: false,
     joinedAt: new Date("2026-01-01"),
   },
   update: {},

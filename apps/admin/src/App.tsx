@@ -6,6 +6,11 @@ import { Leads } from "./Leads";
 import { Dashboard, Personnel, Calendar, Settings } from "./Workspace";
 import { SiteContent } from "./SiteContent";
 import { Content } from "./Content";
+import {
+  PermissionComponent,
+  hasPermission,
+  pagePermission,
+} from "./permissions";
 const nav = {
   en: [
     "Overview",
@@ -80,8 +85,11 @@ export default function App() {
     refresh();
   }, [refresh]);
   useEffect(() => {
-    if (user?.role === "EDITOR") setPage(user.contentEdit ? 6 : 8);
-  }, [user?.role]);
+    if (user && !hasPermission(user, pagePermission(page)))
+      setPage(
+        hasPermission(user, "crm") ? 0 : hasPermission(user, "content") ? 6 : 8,
+      );
+  }, [user?.id, user?.role, user?.contentEdit, page]);
   useEffect(() => {
     document.documentElement.lang = locale;
     document.documentElement.dir = locale === "he" ? "rtl" : "ltr";
@@ -99,6 +107,19 @@ export default function App() {
     const timer = setInterval(load, 30000);
     return () => clearInterval(timer);
   }, [user]);
+  const signOut = async () => {
+    try {
+      await api("/auth/logout", "POST");
+      setUser(null);
+      setNotes([]);
+      setNotifications(false);
+      setPage(0);
+      setMenu(false);
+      setError("");
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  };
   const token = new URLSearchParams(location.search).get("token");
   if (loading)
     return (
@@ -214,7 +235,6 @@ export default function App() {
         </section>
       </main>
     );
-  const content = user.role === "SUPER_ADMIN" || user.contentEdit;
   return (
     <div className="workspace">
       <aside className={menu ? "open" : ""}>
@@ -222,29 +242,26 @@ export default function App() {
           AURA<span>{t("PROPERTY / WORKSPACE")}</span>
         </a>
         <nav>
-          {nav[locale].map(
-            (title, i) =>
-              (i === 6 || i === 7
-                ? content
-                : user.role === "EDITOR"
-                  ? i === 4 || i === 5 || i === 8
-                  : true) && (
-                <button
-                  key={i}
-                  className={page === i ? "selected" : ""}
-                  onClick={() => {
-                    setPage(i);
-                    setMenu(false);
-                  }}
-                >
-                  <span>
-                    {["◈", "▤", "◌", "✓", "▦", "♧", "▱", "✎", "⚙"][i]}
-                  </span>
-                  {title}
-                </button>
-              ),
-          )}
-          {content && (
+          {nav[locale].map((title, i) => (
+            <PermissionComponent
+              key={i}
+              user={user}
+              permission={pagePermission(i)}
+            >
+              <button
+                key={i}
+                className={page === i ? "selected" : ""}
+                onClick={() => {
+                  setPage(i);
+                  setMenu(false);
+                }}
+              >
+                <span>{["◈", "▤", "◌", "✓", "▦", "♧", "▱", "✎", "⚙"][i]}</span>
+                {title}
+              </button>
+            </PermissionComponent>
+          ))}
+          <PermissionComponent user={user} permission="content">
             <button
               className={page === 9 ? "selected" : ""}
               onClick={() => {
@@ -255,7 +272,7 @@ export default function App() {
               <span>◇</span>
               {t("Website")}
             </button>
-          )}
+          </PermissionComponent>
         </nav>
         <div className="side-bottom">
           <span className="avatar">{user.name?.slice(0, 1)}</span>
@@ -263,14 +280,8 @@ export default function App() {
             {user.name}
             <small>{user.role?.replaceAll("_", " ")}</small>
           </div>
-          <button
-            aria-label={t("Sign out")}
-            onClick={async () => {
-              await api("/auth/logout", "POST");
-              setUser(null);
-            }}
-          >
-            ↗
+          <button aria-label={t("Sign out")} onClick={signOut}>
+            {t("Sign out")}
           </button>
         </div>
       </aside>
@@ -309,6 +320,7 @@ export default function App() {
             >
               {theme === "light" ? "☾" : "☀"}
             </button>
+            <button onClick={signOut}>{t("Sign out")}</button>
             <button
               className="notification-button"
               onClick={() => setNotifications(true)}
@@ -321,24 +333,26 @@ export default function App() {
           <p className="eyebrow">{t("AURA WORKSPACE")}</p>
           <h1>{page === 9 ? t("Website") : nav[locale][page]}</h1>
           {error && <p className="error">{error}</p>}
-          {page === 9 ? (
-            <SiteContent />
-          ) : page === 0 ? (
-            <Dashboard />
-          ) : page <= 3 ? (
-            <Leads
-              mode={page === 1 ? "active" : page === 2 ? "lost" : "won"}
-              user={user}
-            />
-          ) : page === 4 ? (
-            <Calendar />
-          ) : page === 5 ? (
-            <Personnel user={user} />
-          ) : page === 6 || page === 7 ? (
-            <Content kind={page === 6 ? "projects" : "blogs"} user={user} />
-          ) : (
-            <Settings user={user} refresh={refresh} />
-          )}
+          <PermissionComponent user={user} permission={pagePermission(page)}>
+            {page === 9 ? (
+              <SiteContent />
+            ) : page === 0 ? (
+              <Dashboard />
+            ) : page <= 3 ? (
+              <Leads
+                mode={page === 1 ? "active" : page === 2 ? "lost" : "won"}
+                user={user}
+              />
+            ) : page === 4 ? (
+              <Calendar />
+            ) : page === 5 ? (
+              <Personnel user={user} />
+            ) : page === 6 || page === 7 ? (
+              <Content kind={page === 6 ? "projects" : "blogs"} user={user} />
+            ) : (
+              <Settings user={user} refresh={refresh} />
+            )}
+          </PermissionComponent>
         </div>
       </div>
       {notifications && (

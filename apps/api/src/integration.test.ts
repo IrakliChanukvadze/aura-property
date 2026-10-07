@@ -798,3 +798,29 @@ test("team filter is owner-only and ordinary agents cannot approve vacations", a
     "PENDING",
   );
 });
+
+test("per-user content grants and logout apply on the server", async () => {
+  const leader = await account("TEAM_LEAD"),
+    editor = await account("EDITOR");
+  await db.user.update({
+    where: { id: editor.u.id },
+    data: { contentEdit: true },
+  });
+  assert.equal((await request(leader, "GET", "/api/site")).statusCode, 403);
+  assert.equal((await request(leader, "GET", "/api/projects")).statusCode, 200);
+  assert.equal(
+    (await request(leader, "POST", "/api/posts", { slug: "denied" }))
+      .statusCode,
+    403,
+  );
+  assert.equal((await request(editor, "GET", "/api/site")).statusCode, 200);
+  assert.equal((await request(editor, "GET", "/api/leads")).statusCode, 403);
+  await db.user.update({
+    where: { id: leader.u.id },
+    data: { contentEdit: true },
+  });
+  assert.equal((await request(leader, "GET", "/api/site")).statusCode, 200);
+  const logout = await request(editor, "POST", "/api/auth/logout", {});
+  assert.equal(logout.statusCode, 200);
+  assert.equal((await request(editor, "GET", "/api/auth/me")).statusCode, 401);
+});

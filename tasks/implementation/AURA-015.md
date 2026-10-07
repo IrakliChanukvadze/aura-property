@@ -1,0 +1,5 @@
+# AURA-015 — Consistent page permissions and visible logout
+
+Shared PermissionComponent wraps sidebar controls and page children, returning null without access; inaccessible current pages redirect to an allowed default. Demo team lead contentEdit grant removed in local data and fresh seed defaults. Labelled Sign out appears in header and sidebar, clearing server session and rendered account state. Failed network requests now state API connectivity failure rather than only Failed to fetch.
+
+26 API/domain regressions pass including individual content grant, editor CRM denial, grant revocation behavior through authentication, and logout session invalidation. Workspace TypeScript and admin production build pass before the final header addition; final header TypeScript check passes. Website settings GET succeeds for granted editor and rejects ungranted lead. The reported intermittent browser network failure was not reproduced; its root cause is not claimed fixed. Role matrix is documented in docs/product/permissions.md.

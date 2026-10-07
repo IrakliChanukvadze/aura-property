@@ -14,20 +14,28 @@ export async function api<T = any>(
   method = "GET",
   body?: unknown,
 ): Promise<T> {
-  const response = await fetch(base + path, {
-    method,
-    credentials: "include",
-    headers:
-      body instanceof FormData
-        ? undefined
-        : { "Content-Type": "application/json" },
-    body:
-      body === undefined
-        ? undefined
-        : body instanceof FormData
-          ? body
-          : JSON.stringify(body),
-  });
+  let response: Response;
+  try {
+    response = await fetch(base + path, {
+      method,
+      credentials: "include",
+      headers:
+        body instanceof FormData
+          ? undefined
+          : { "Content-Type": "application/json" },
+      body:
+        body === undefined
+          ? undefined
+          : body instanceof FormData
+            ? body
+            : JSON.stringify(body),
+    });
+  } catch {
+    throw new ApiError(
+      "API_UNAVAILABLE",
+      "Cannot reach the API. Check that the backend is running, then retry.",
+    );
+  }
   const json = await response.json().catch(() => ({}));
   if (!response.ok)
     throw new ApiError(
