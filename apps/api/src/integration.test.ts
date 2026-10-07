@@ -9,6 +9,7 @@ const { hashPassword } = await import("./domain.js");
 const app = await buildApp();
 const prefix = `test-${randomUUID()}`;
 const users: string[] = [];
+const createdTeamIds: string[] = [];
 const projectIds: string[] = [];
 const customerIds: string[] = [];
 async function account(role: string, teamId: string | null = null) {
@@ -71,7 +72,9 @@ after(async () => {
   await db.leave.deleteMany({ where: { userId: { in: users } } });
   await db.schedule.deleteMany({ where: { userId: { in: users } } });
   await db.commissionRate.deleteMany({ where: { userId: { in: users } } });
-  await db.team.deleteMany({ where: { leadId: { in: users } } });
+  await db.team.deleteMany({
+    where: { OR: [{ leadId: { in: users } }, { id: { in: createdTeamIds } }] },
+  });
   await db.user.deleteMany({ where: { id: { in: users } } });
   await app.close();
   await db.$disconnect();
@@ -697,5 +700,101 @@ test("the owner cannot lose access and contact language remains opportunity-spec
     (await request(owner, "GET", `/api/leads/${second.id}`)).json().data
       .customer.language,
     "ru",
+  );
+});
+
+test("SuperAdmin can create leaderless teams and attach an unassigned lead, with actionable conflicts", async () => {
+  const owner = await account("SUPER_ADMIN"),
+    leader = await account("TEAM_LEAD"),
+    agent = await account("AGENT");
+  const create = await request(owner, "POST", "/api/teams", {
+    name: `${prefix}-empty`,
+    leadId: "",
+  });
+  assert.equal(create.statusCode, 200, create.body);
+  const team = create.json().data;
+  createdTeamIds.push(team.id);
+  assert.equal(team.leadId, null);
+  assert.equal(
+    (
+      await request(agent, "PATCH", `/api/teams/${team.id}`, {
+        leadId: leader.u.id,
+      })
+    ).statusCode,
+    403,
+  );
+  const attach = await request(owner, "PATCH", `/api/teams/${team.id}`, {
+    leadId: leader.u.id,
+  });
+  assert.equal(attach.statusCode, 200, attach.body);
+  assert.equal(attach.json().data.leadId, leader.u.id);
+  assert.equal(
+    (await db.user.findUniqueOrThrow({ where: { id: leader.u.id } })).teamId,
+    team.id,
+  );
+  const duplicate = await request(owner, "POST", "/api/teams", {
+    name: `${prefix}-conflict`,
+    leadId: leader.u.id,
+  });
+  assert.equal(duplicate.statusCode, 409);
+  assert.equal(duplicate.json().error.code, "TEAM_LEAD_ASSIGNED");
+  const empty = await request(owner, "POST", "/api/teams", {
+    name: `${prefix}-another`,
+  });
+  assert.equal(empty.statusCode, 200);
+  createdTeamIds.push(empty.json().data.id);
+  const { assignTeam } = await import("./routing.js");
+  const considered: any[] = [];
+  const route = await assignTeam({
+    team: {
+      findMany: async (args: any) => {
+        considered.push(args);
+        return [{ id: "empty", leadId: null }];
+      },
+    },
+    user: {
+      findUnique: async () => {
+        throw new Error("Null lead must never be queried");
+      },
+    },
+  });
+  assert.deepEqual(route, { teamId: null, agentId: null });
+  assert.deepEqual(considered[0].where.leadId, { not: null });
+});
+
+test("team filter is owner-only and ordinary agents cannot approve vacations", async () => {
+  const owner = await account("SUPER_ADMIN"),
+    agent = await account("AGENT"),
+    other = await account("AGENT");
+  assert.equal(
+    (await request(agent, "GET", "/api/leads?scope=active&teamId=any-team"))
+      .statusCode,
+    403,
+  );
+  assert.equal(
+    (await request(owner, "GET", "/api/leads?scope=active&teamId=any-team"))
+      .statusCode,
+    200,
+  );
+  const leave = await db.leave.create({
+    data: {
+      userId: other.u.id,
+      startsAt: new Date("2027-01-01"),
+      endsAt: new Date("2027-01-02"),
+      days: 1,
+      workingDates: ["2027-01-01"],
+    },
+  });
+  assert.equal(
+    (
+      await request(agent, "POST", `/api/leave/${leave.id}/approve`, {
+        decision: "APPROVE",
+      })
+    ).statusCode,
+    403,
+  );
+  assert.equal(
+    (await db.leave.findUniqueOrThrow({ where: { id: leave.id } })).status,
+    "PENDING",
   );
 });

@@ -1,7 +1,7 @@
 import { agencySettings } from "./settings.js";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { db, ApiError, requireAdmin, acting } from "./db.js";
+import { db, ApiError, requireAdmin, acting, permanent } from "./db.js";
 import { authenticate } from "./auth.js";
 import {
   accrued,
@@ -16,9 +16,10 @@ async function approveAuthority(u: any, target: any) {
   if (u.role === "SUPER_ADMIN") return;
   if (
     target.role === "TEAM_LEAD" ||
+    target.role === "SUPER_ADMIN" ||
     !u.teamId ||
     u.teamId !== target.teamId ||
-    !(u.role === "TEAM_LEAD" || (await acting(u)))
+    !((await permanent(u)) || (await acting(u)))
   )
     throw new ApiError(403, "FORBIDDEN", "Authorized approver required");
 }
@@ -60,7 +61,7 @@ async function notify(tx: any, userId: string, text: string) {
 }
 async function audience(u: any) {
   if (u.role === "SUPER_ADMIN") return {};
-  if (u.role === "TEAM_LEAD" || (await acting(u))) return { teamId: u.teamId };
+  if ((await permanent(u)) || (await acting(u))) return { teamId: u.teamId };
   return { id: u.id };
 }
 export async function leaveRoutes(app: FastifyInstance) {
@@ -322,7 +323,7 @@ export async function leaveRoutes(app: FastifyInstance) {
           ? await tx.team.findUnique({ where: { id: target.teamId } })
           : null;
         const recipients =
-          target.role === "TEAM_LEAD" || !team
+          target.role === "TEAM_LEAD" || !team?.leadId
             ? (
                 await tx.user.findMany({
                   where: { role: "SUPER_ADMIN", active: true },

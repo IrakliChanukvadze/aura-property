@@ -1,12 +1,13 @@
 import { db, ApiError, event } from "./db.js";
 export async function assignTeam(tx: any) {
   const teams = await tx.team.findMany({
-    where: { active: true },
+    where: { active: true, leadId: { not: null } },
     orderBy: [{ lastAssignedAt: "asc" }, { id: "asc" }],
   });
   let selected: any = null,
     min = Infinity;
   for (const t of teams) {
+    if (!t.leadId) continue;
     const lead = await tx.user.findUnique({ where: { id: t.leadId } });
     if (!lead?.active || lead.role !== "TEAM_LEAD" || lead.teamId !== t.id)
       continue;
@@ -61,7 +62,13 @@ export async function chooseAgent(tx: any, teamId: string) {
     return chosen.id;
   }
   const team = await tx.team.findUnique({ where: { id: teamId } });
-  return team?.leadId ?? null;
+  if (!team?.active || !team.leadId) return null;
+  const leader = await tx.user.findUnique({ where: { id: team.leadId } });
+  return leader?.active &&
+    leader.role === "TEAM_LEAD" &&
+    leader.teamId === teamId
+    ? leader.id
+    : null;
 }
 export async function reassign(
   tx: any,

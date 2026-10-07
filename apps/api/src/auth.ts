@@ -341,7 +341,8 @@ export async function authRoutes(app: FastifyInstance) {
             const oldTeam = lead.teamId
               ? await tx.team.findUnique({ where: { id: lead.teamId } })
               : null;
-            if (oldTeam) await reassign(tx, lead, oldTeam.leadId, req.actor.id);
+            if (oldTeam?.leadId)
+              await reassign(tx, lead, oldTeam.leadId, req.actor.id);
             else
               await tx.lead.update({
                 where: { id: lead.id },
@@ -436,24 +437,96 @@ export async function authRoutes(app: FastifyInstance) {
           : { id: req.actor.teamId ?? "none" },
     }),
   }));
+  const teamFields = z.object({
+    name: z.string().trim().min(2),
+    leadId: z
+      .string()
+      .trim()
+      .transform((v) => v || null)
+      .nullable()
+      .optional(),
+    active: z.boolean().optional(),
+  });
+  async function validateLeader(
+    tx: any,
+    leadId: string | null | undefined,
+    teamId?: string,
+  ) {
+    if (!leadId) return null;
+    const user = await tx.user.findUnique({ where: { id: leadId } });
+    if (!user?.active || user.role !== "TEAM_LEAD")
+      throw new ApiError(400, "INVALID_LEAD", "Choose an active team lead");
+    if (
+      (user.teamId && user.teamId !== teamId) ||
+      (await tx.team.findFirst({
+        where: { leadId, ...(teamId ? { id: { not: teamId } } : {}) },
+      }))
+    )
+      throw new ApiError(
+        409,
+        "TEAM_LEAD_ASSIGNED",
+        "This team lead already belongs to another team. Choose an unassigned lead or create the team without a lead.",
+      );
+    return user;
+  }
   app.post("/api/teams", { preHandler: authenticate }, async (req) => {
     requireAdmin(req.actor);
-    const b = z
-      .object({ name: z.string().min(2), leadId: z.string() })
-      .parse(req.body);
+    const b = teamFields.parse(req.body);
     return {
       data: await db.$transaction(async (tx) => {
-        const u = await tx.user.findUniqueOrThrow({ where: { id: b.leadId } });
-        if (u.role !== "TEAM_LEAD" || !u.active)
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(481529)`;
+        const user = await validateLeader(tx, b.leadId);
+        const team = await tx.team.create({
+          data: { ...b, leadId: b.leadId ?? null },
+        });
+        if (user)
+          await tx.user.update({
+            where: { id: user.id },
+            data: { teamId: team.id },
+          });
+        await tx.audit.create({
+          data: {
+            actorId: req.actor.id,
+            action: "TEAM_CREATED",
+            data: { teamId: team.id, ...b },
+          },
+        });
+        return team;
+      }),
+    };
+  });
+  app.patch("/api/teams/:id", { preHandler: authenticate }, async (req) => {
+    requireAdmin(req.actor);
+    const b = teamFields.partial().parse(req.body);
+    const id = (req.params as any).id;
+    return {
+      data: await db.$transaction(async (tx) => {
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(481529)`;
+        const previous = await tx.team.findUnique({ where: { id } });
+        if (!previous) throw new ApiError(404, "NOT_FOUND", "Team not found");
+        const user = await validateLeader(tx, b.leadId, id);
+        if (
+          b.leadId !== undefined &&
+          previous.leadId &&
+          previous.leadId !== b.leadId
+        )
           throw new ApiError(
             400,
-            "INVALID_LEAD",
-            "Choose active permanent team lead",
+            "TEAM_LEAD_REPLACEMENT",
+            "Replacing an existing permanent lead requires a staff transfer plan. Assign a lead to a team that has no lead.",
           );
-        const team = await tx.team.create({ data: b });
-        await tx.user.update({
-          where: { id: u.id },
-          data: { teamId: team.id },
+        const team = await tx.team.update({ where: { id }, data: b });
+        if (user)
+          await tx.user.update({
+            where: { id: user.id },
+            data: { teamId: id },
+          });
+        await tx.audit.create({
+          data: {
+            actorId: req.actor.id,
+            action: "TEAM_UPDATED",
+            data: { teamId: id, ...b },
+          },
         });
         return team;
       }),

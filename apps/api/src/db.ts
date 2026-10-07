@@ -29,7 +29,7 @@ export function content(u: Actor) {
 export async function acting(u: Actor) {
   if (!u.teamId) return false;
   const team = await db.team.findUnique({ where: { id: u.teamId } });
-  if (!team) return false;
+  if (!team?.leadId) return false;
   return !!(await db.leave.findFirst({
     where: {
       userId: team.leadId,

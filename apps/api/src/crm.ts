@@ -62,7 +62,7 @@ async function lost(tx: any, lead: any, u: any, comment: string) {
   });
   if (!reviewed && lead.teamId) {
     const t = await tx.team.findUnique({ where: { id: lead.teamId } });
-    if (t)
+    if (t?.leadId)
       await tx.notification.create({
         data: {
           userId: t.leadId,
@@ -95,6 +95,15 @@ export async function crmRoutes(app: FastifyInstance) {
       if (Object.values(range).some((d: any) => !Number.isFinite(d.getTime())))
         throw new ApiError(400, "INVALID_DATES", "Invalid date filter");
       and.push({ createdAt: range });
+    }
+    if (q.teamId) {
+      if (req.actor.role !== "SUPER_ADMIN")
+        throw new ApiError(
+          403,
+          "FORBIDDEN",
+          "Team filtering is restricted to SuperAdmin",
+        );
+      and.push({ teamId: q.teamId });
     }
     if (q.search)
       and.push({
@@ -964,10 +973,10 @@ export async function crmRoutes(app: FastifyInstance) {
           const team = l.teamId
             ? await tx.team.findUnique({ where: { id: l.teamId } })
             : null;
-          const leader = team
+          const leader = team?.leadId
             ? await tx.user.findUnique({ where: { id: team.leadId } })
             : null;
-          const cover = team
+          const cover = team?.leadId
             ? await tx.leave.findFirst({
                 where: {
                   userId: team.leadId,
@@ -1003,7 +1012,9 @@ export async function crmRoutes(app: FastifyInstance) {
           const agentRate = Number(
               agentHistory?.agentRate ?? agent?.agentRate ?? 1,
             ),
-            leadRate = Number(leadHistory?.leadRate ?? leader?.leadRate ?? 0.5),
+            leadRate = leader
+              ? Number(leadHistory?.leadRate ?? leader.leadRate)
+              : 0,
             actingRate = Number(cover?.actingRate ?? 0);
           const amounts = commission(
             b.price,

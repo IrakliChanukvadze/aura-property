@@ -9,7 +9,7 @@ import { Content } from "./Content";
 const nav = {
   en: [
     "Overview",
-    t("Active leads"),
+    "Active leads",
     "Lost leads",
     "Won sales",
     "Calendar",

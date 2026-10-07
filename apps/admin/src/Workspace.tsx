@@ -273,6 +273,19 @@ export function Personnel({ user }: { user: any }) {
     [selected, setSelected] = useState<any>(null);
   const manager =
     user.role === "SUPER_ADMIN" || user.role === "TEAM_LEAD" || user.actingLead;
+  const canReviewLeave = (request: any) => {
+    if (request.userId === user.id) return false;
+    if (user.role === "SUPER_ADMIN") return true;
+    const target = request.user || users.find((u) => u.id === request.userId);
+    return Boolean(
+      manager &&
+      target &&
+      user.teamId &&
+      request.teamId === user.teamId &&
+      target?.role !== "TEAM_LEAD" &&
+      target?.role !== "SUPER_ADMIN",
+    );
+  };
   const load = () =>
     Promise.all([
       api<any[]>("/users"),
@@ -312,13 +325,42 @@ export function Personnel({ user }: { user: any }) {
             </button>
           )}
           {user.role === "SUPER_ADMIN" && (
-            <button onClick={() => setDialog("team")}>
+            <button
+              onClick={() => {
+                setSelected(null);
+                setDialog("team");
+              }}
+            >
               {t("Create team")}
             </button>
           )}
         </div>
       </div>
       {error && <p className="error">{error}</p>}
+      {user.role === "SUPER_ADMIN" && (
+        <section className="panel">
+          <h2>{t("Teams")}</h2>
+          {teams.map((team) => (
+            <div className="list-row" key={team.id}>
+              <div>
+                <strong>{team.name}</strong>
+                <small className="block">
+                  {users.find((u) => u.id === team.leadId)?.name ||
+                    t("No team lead yet")}
+                </small>
+              </div>
+              <button
+                onClick={() => {
+                  setSelected(team);
+                  setDialog("team");
+                }}
+              >
+                {t("Edit")}
+              </button>
+            </div>
+          ))}
+        </section>
+      )}
       <div className="panel table-wrap">
         <table>
           <thead>
@@ -418,7 +460,7 @@ export function Personnel({ user }: { user: any }) {
                 {l.status}
               </small>
             </div>
-            {manager && l.status === "PENDING" && (
+            {canReviewLeave(l) && l.status === "PENDING" && (
               <div>
                 <button
                   onClick={() => {
@@ -430,7 +472,7 @@ export function Personnel({ user }: { user: any }) {
                 </button>
               </div>
             )}
-            {manager && l.cancellationRequested && (
+            {canReviewLeave(l) && l.cancellationRequested && (
               <div>
                 <button
                   onClick={async () => {
@@ -553,17 +595,35 @@ export function Personnel({ user }: { user: any }) {
           {dialog === "team" && (
             <Form
               fields={[
-                { name: "name", label: t("Team name"), required: true },
+                {
+                  name: "name",
+                  label: t("Team name"),
+                  required: true,
+                  value: selected?.name,
+                },
                 {
                   name: "leadId",
                   label: t("Permanent team lead"),
-                  options: users
-                    .filter((u) => u.role === "TEAM_LEAD")
-                    .map((u) => ({ value: u.id, label: u.name })),
+                  value: selected?.leadId || "",
+                  options: [
+                    { value: "", label: t("No team lead yet") },
+                    ...users
+                      .filter(
+                        (u) =>
+                          u.role === "TEAM_LEAD" &&
+                          u.active &&
+                          (!u.teamId || u.id === selected?.leadId),
+                      )
+                      .map((u) => ({ value: u.id, label: u.name })),
+                  ],
                 },
               ]}
               onSubmit={async (v) => {
-                await api("/teams", "POST", v);
+                await api(
+                  selected?.id ? `/teams/${selected.id}` : "/teams",
+                  selected?.id ? "PATCH" : "POST",
+                  { ...v, leadId: v.leadId || null },
+                );
                 await close();
               }}
             />
@@ -605,7 +665,7 @@ export function Personnel({ user }: { user: any }) {
               }}
             />
           )}
-          {dialog === "approve" && (
+          {dialog === "approve" && selected && canReviewLeave(selected) && (
             <Form
               fields={[
                 {

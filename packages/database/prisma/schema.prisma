@@ -41,7 +41,7 @@ model Token {
 model Team {
  id String @id @default(cuid())
  name String
- leadId String @unique
+ leadId String? @unique
  active Boolean @default(true)
  lastAssignedAt DateTime?
 }
