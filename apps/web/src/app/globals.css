@@ -8,6 +8,7 @@
   --accent: #59644b;
   --contrast: #faf8ef;
   --gold: #c8b590;
+  --control-scheme: light;
   color-scheme: light;
 }
 :root[data-theme="dark"] {
@@ -19,6 +20,7 @@
   --accent: #c4c8a8;
   --contrast: #172016;
   --gold: #cbb58b;
+  --control-scheme: dark;
   color-scheme: dark;
 }
 * {
@@ -548,6 +550,14 @@ input,
 select {
   min-height: 44px;
 }
+select {
+  color-scheme: var(--control-scheme);
+}
+select option,
+select optgroup {
+  background: var(--bg);
+  color: var(--text);
+}
 .filters input,
 .filters select {
   display: block;
@@ -573,9 +583,10 @@ select {
 }
 .building-preview {
   position: relative;
-  align-self: start;
+  align-self: center;
 }
 .building-preview > img {
+  display: block;
   width: 100%;
   height: auto;
 }
