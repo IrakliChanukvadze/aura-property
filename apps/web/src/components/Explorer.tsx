@@ -28,14 +28,6 @@ export function Explorer({
   const [maxArea, setMaxArea] = useState("");
   const [beds, setBeds] = useState("");
   const [only, setOnly] = useState(false);
-  const blocks =
-    project.metadata?.blocks?.filter(
-      (block) =>
-        block.polygon?.length >= 3 &&
-        block.buildingIds?.some((id) =>
-          project.buildings.some((building) => building.id === id),
-        ),
-    ) || [];
   const selectBuilding = (index: number) => {
     setBuildingIndex(index);
     setFloorIndex(0);
@@ -44,6 +36,7 @@ export function Explorer({
   };
   const dialog = useRef<HTMLDialogElement>(null);
   const [selectionReady, setSelectionReady] = useState(false);
+  const buildingSet = project.buildings.map((b) => b.id).join(",");
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const bi = Math.max(
@@ -63,7 +56,7 @@ export function Explorer({
     setFloorIndex(fi);
     setUnit(selectedUnit || null);
     setSelectionReady(true);
-  }, [project.id]);
+  }, [project.id, buildingSet]);
   useEffect(() => {
     if (!selectionReady || !building || !floor) return;
     const url = new URL(window.location.href);
@@ -100,7 +93,7 @@ export function Explorer({
     (!beds || u.bedrooms === Number(beds)) &&
     (!only || u.status === "AVAILABLE");
   return (
-    <section className="explorer section">
+    <section className="explorer section block-explorer">
       <div className="section-heading">
         <div>
           <p className="eyebrow">
@@ -121,52 +114,6 @@ export function Explorer({
           ))}
         </div>
       </div>
-      {blocks.length > 0 && (
-        <div className={styles.overview}>
-          <img
-            src={project.coverImage}
-            alt={project.translations[locale]?.title || project.slug}
-            draggable={false}
-          />
-          <svg
-            viewBox="0 0 100 100"
-            preserveAspectRatio="none"
-            aria-label={project.translations[locale]?.title || project.slug}
-          >
-            {blocks.map((block) => {
-              const selected = block.buildingIds.includes(building.id);
-              const select = () =>
-                selectBuilding(
-                  project.buildings.findIndex((item) =>
-                    block.buildingIds.includes(item.id),
-                  ),
-                );
-              return (
-                <polygon
-                  key={block.id}
-                  points={block.polygon
-                    .map((point) => point.join(","))
-                    .join(" ")}
-                  className={`floor-polygon ${selected ? "selected" : ""}`}
-                  role="button"
-                  tabIndex={0}
-                  aria-label={block.name}
-                  aria-pressed={selected}
-                  onClick={select}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
-                      select();
-                    }
-                  }}
-                >
-                  <title>{block.name}</title>
-                </polygon>
-              );
-            })}
-          </svg>
-        </div>
-      )}
       <div className="filters">
         <label>
           {d.price} ({currency})

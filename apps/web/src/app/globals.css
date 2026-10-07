@@ -1229,3 +1229,16 @@ select optgroup {
   height: 16px;
   margin: 0;
 }
+
+/* Dedicated block pages keep navigation and filters close to the plans. */
+.block-explorer {
+  padding-block: 24px;
+}
+.block-explorer .apartment-list {
+  max-height: 260px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.block-explorer .section-heading {
+  margin-bottom: 20px;
+}

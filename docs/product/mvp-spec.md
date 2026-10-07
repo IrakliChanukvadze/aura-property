@@ -95,3 +95,7 @@ Post-MVP: direct calling/phone masking, AI transcription/comments, messaging ing
 ## Owner browser review — 2026-10-07
 
 Teams may initially have no permanent lead. SuperAdmin can create such a team and attach an eligible unassigned lead later. Leaderless teams are excluded from website auto-routing. Active Kanban supports desktop drag and drop with required call/viewing workflows preserved, and SuperAdmin has a team filter. Project authoring uses focused steps with visual annotation canvases. Ordinary agents cannot review or approve vacations; eligible permanent/acting leads review team staff, and SuperAdmin reviews team leads. Review controls do not offer self-approval.
+
+### Public exploration navigation — 2026-10-07
+
+Project introduction, whole-project block selection and selected-block floor/apartment exploration use separate routes. Filters appear only in the selected-block explorer. Keep old shared selection links compatible through redirects; general inquiry uses a compact dialog.

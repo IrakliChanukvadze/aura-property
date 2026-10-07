@@ -10,7 +10,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/about",
     "/contact",
     "/blog",
-    ...p.filter((x) => !x.demo).map((x) => `/projects/${x.slug}`),
+    ...p
+      .filter((x) => !x.demo)
+      .flatMap((x) => [
+        `/projects/${x.slug}`,
+        `/projects/${x.slug}/explore`,
+        ...(x.metadata?.blocks?.length
+          ? x.metadata.blocks.map((b) => `/projects/${x.slug}/explore/${b.id}`)
+          : x.buildings.map((b) => `/projects/${x.slug}/explore/${b.id}`)),
+      ]),
     ...b.map((x) => `/blog/${x.slug}`),
   ];
   return paths.flatMap((path) =>

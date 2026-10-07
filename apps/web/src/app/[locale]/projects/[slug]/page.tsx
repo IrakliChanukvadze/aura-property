@@ -1,9 +1,8 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
-import { project, exchangeRate } from "@/lib/api";
+import { notFound, redirect } from "next/navigation";
+import { project } from "@/lib/api";
 import { isLocale, t } from "@/lib/i18n";
-import { Explorer } from "@/components/Explorer";
-import { InquiryForm } from "@/components/InquiryForm";
+import { projectBlocks, projectNavigation } from "@/lib/project-navigation";
 import { metadata } from "@/lib/seo";
 export async function generateMetadata({
   params,
@@ -23,15 +22,43 @@ export async function generateMetadata({
 }
 export default async function Page({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string; slug: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { locale, slug } = await params;
   if (!isLocale(locale)) notFound();
   const p = await project(slug);
   if (!p) notFound();
   const d = t(locale);
-  const rate = await exchangeRate();
+  const query = await searchParams;
+  const buildingId =
+    typeof query.building === "string" ? query.building : undefined;
+  const floorId = typeof query.floor === "string" ? query.floor : undefined;
+  const unitId = typeof query.unit === "string" ? query.unit : undefined;
+  const selectedBuilding = p.buildings.find(
+    (building) =>
+      building.id === buildingId ||
+      building.floors.some(
+        (floor) =>
+          floor.id === floorId ||
+          floor.units.some((unit) => unit.id === unitId),
+      ),
+  );
+  if (selectedBuilding) {
+    const block = projectBlocks(p).find((block) =>
+      block.buildingIds.includes(selectedBuilding.id),
+    );
+    if (block) {
+      const preserved = new URLSearchParams({ building: selectedBuilding.id });
+      if (floorId) preserved.set("floor", floorId);
+      if (unitId) preserved.set("unit", unitId);
+      redirect(
+        `/${locale}/projects/${slug}/explore/${encodeURIComponent(block.id)}?${preserved}`,
+      );
+    }
+  }
   return (
     <>
       <section className="project-hero">
@@ -48,32 +75,13 @@ export default async function Page({
       <section className="project-intro section">
         <p>{p.translations[locale].description}</p>
         {p.demo && <p className="demo-label">{d.demo}</p>}
-        {p.soldOut ? (
-          <Link className="button primary" href={`/${locale}/projects`}>
-            {d.explore}
-          </Link>
-        ) : (
-          <a className="button primary" href="#inquiry">
-            {d.inquire}
-          </a>
-        )}
+        <Link
+          className="button primary"
+          href={`/${locale}/projects/${slug}/explore`}
+        >
+          {projectNavigation(locale).explore} ↗
+        </Link>
       </section>
-      <Explorer project={p} locale={locale} usdGel={rate?.usdGel} />
-      {!p.soldOut && (
-        <section id="inquiry" className="section inquiry-section">
-          <div>
-            <p className="eyebrow">{d.nextStep}</p>
-            <h2>{d.inquire}</h2>
-            <p>{d.contactBody}</p>
-          </div>
-          <InquiryForm
-            locale={locale}
-            projectId={p.id}
-            project={p}
-            demo={p.demo}
-          />
-        </section>
-      )}
     </>
   );
 }

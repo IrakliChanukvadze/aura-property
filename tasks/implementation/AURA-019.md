@@ -1,0 +1,5 @@
+# AURA-019 — Three-page project exploration
+
+Owner browser review replaces the long combined project page with three routes. /[locale]/projects/[slug] renders hero and introduction with Explore project. /explore renders only the whole-project cover with linked block polygons and fallback block links. /explore/[blockId] scopes buildings/floors/apartments to the selected block and contains price/area/bedroom/availability filters. Apartment rows scroll within a compact panel; general inquiry opens a native modal rather than a full page section.
+
+Server validates locale, project and block; unknown blocks return404. Localized titles/canonicals and sitemap include the exploration hierarchy. Existing project URLs with building/floor/unit selections redirect to the relevant block, preserving selection. Browser verified main -> overview -> Block C, general inquiry dialog and old floor6 link redirect. Web TypeScript and production build pass. API unchanged. Mobile layout retains responsive explorer and keyboard block links; no new automated mirror tests added for this navigation slice.
