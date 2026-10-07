@@ -1,0 +1,129 @@
+/* Project authoring follows a focused, step-by-step workflow. */
+.scrim:has(.project-steps) {
+  padding: 24px;
+  justify-content: center;
+  align-items: center;
+}
+.modal:has(.project-steps) {
+  width: 1100px;
+  height: calc(100dvh - 48px);
+  border-radius: 16px;
+  padding: 24px 30px;
+  position: relative;
+}
+.modal:has(.project-steps) > header {
+  top: -24px;
+}
+.project-steps {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 24px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--line);
+}
+.project-steps button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 4px;
+  border: 0;
+  font-size: 12px;
+  background: transparent;
+  text-align: center;
+}
+.project-steps button span {
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+}
+.project-steps button[aria-current="step"] {
+  background: var(--bg);
+  font-weight: 700;
+}
+.project-steps button[aria-current="step"] span {
+  background: var(--accent);
+  color: var(--surface);
+}
+.project-step-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  bottom: -24px;
+  background: var(--surface);
+  padding: 18px 0 4px;
+  border-top: 1px solid var(--line);
+  margin-top: 24px;
+  z-index: 2;
+}
+.project-building-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 14px;
+  margin: 20px 0;
+}
+.project-building-list button {
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  gap: 6px;
+  padding: 10px;
+}
+.project-building-list img {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+.project-floor-list {
+  margin: 16px 0;
+}
+.modal:has(.project-steps) .annotation-image {
+  max-width: 720px;
+  margin: 16px auto;
+}
+.modal:has(.project-steps) .annotation-image img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+@media (max-width: 700px) {
+  .scrim:has(.project-steps) {
+    padding: 0;
+  }
+  .modal:has(.project-steps) {
+    height: 100dvh;
+    border-radius: 0;
+    padding: 18px;
+  }
+  .project-steps {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+  }
+  .project-step-footer {
+    bottom: -18px;
+  }
+}
+
+.project-entity-edit {
+  margin: 18px 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.project-entity-edit summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.project-entity-edit form {
+  margin-top: 14px;
+}
+.annotation-image polygon.annotation-selected {
+  stroke: var(--accent);
+  stroke-width: 0.6;
+}

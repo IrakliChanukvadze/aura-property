@@ -2,6 +2,16 @@ import { t } from "./i18n";
 import { useEffect, useState } from "react";
 import { api, mediaUrl } from "./api";
 import { Form, Modal, Empty, type Field, currencies } from "./ui";
+import "./project-editor.css";
+const projectSteps = [
+  "Details",
+  "Translations",
+  "Buildings",
+  "Floors",
+  "Apartments",
+  "Annotations",
+  "Review & publish",
+];
 const locales = ["en", "ka", "ru", "he"];
 export function Content({
   kind,
@@ -15,7 +25,8 @@ export function Content({
     [selected, setSelected] = useState<any>(null),
     [dialog, setDialog] = useState(false),
     [error, setError] = useState(""),
-    [locale, setLocale] = useState("en");
+    [locale, setLocale] = useState("en"),
+    [step, setStep] = useState(0);
   const load = () =>
     api<any[]>(`/${endpoint}`)
       .then(setItems)
@@ -133,6 +144,8 @@ export function Content({
           className="primary"
           onClick={() => {
             setSelected(null);
+            setStep(0);
+            setError("");
             setDialog(true);
           }}
         >
@@ -148,6 +161,8 @@ export function Content({
             key={item.id}
             onClick={() => {
               setSelected(item);
+              setStep(0);
+              setError("");
               setDialog(true);
             }}
           >
@@ -175,143 +190,224 @@ export function Content({
           }
           onClose={() => setDialog(false)}
         >
-          <div className="tabs">
-            {locales.map((l) => (
-              <button
-                key={l}
-                onClick={() => setLocale(l)}
-                className={locale === l ? "selected" : ""}
-              >
-                {l.toUpperCase()}{" "}
-                {selected?.translations?.[l]?.reviewed ? "✓" : ""}
-              </button>
-            ))}
-          </div>
-          <Form
-            key={`${selected?.id || "new"}-${locale}`}
-            fields={fields}
-            onSubmit={async (v) => {
-              const body =
-                kind === "blogs"
-                  ? {
-                      slug: v.slug,
-                      coverImage: v.coverImage || null,
-                      ...(v.publicationDate
-                        ? {
-                            publishedAt: new Date(
-                              v.publicationDate + "T12:00:00+04:00",
-                            ).toISOString(),
-                          }
-                        : {}),
-                      translations: {
-                        ...selected?.translations,
-                        [locale]: {
-                          title: v.title,
-                          body: v.body,
-                          reviewed: false,
-                        },
-                      },
-                    }
-                  : {
-                      slug: v.slug,
-                      city: v.city,
-                      showPrices: v.showPrices === "true",
-                      constructionStatus: v.constructionStatus,
-                      coverImage: v.coverImage,
-                      buildings: selected?.buildings || [],
-                      translations: {
-                        ...selected?.translations,
-                        [locale]: {
-                          title: v.title,
-                          description: v.description,
-                          reviewed: false,
-                        },
-                      },
-                    };
-              await save({ ...body, published: false });
-              setError("");
-            }}
-            label={t("Save draft")}
-          />
+          {kind === "projects" && (
+            <nav className="project-steps" aria-label="Project setup steps">
+              {projectSteps.map((label, index) => (
+                <button
+                  key={label}
+                  disabled={!selected?.id && index > 0}
+                  aria-current={step === index ? "step" : undefined}
+                  onClick={() => {
+                    setStep(index);
+                    setError("");
+                  }}
+                >
+                  <span>{index + 1}</span>
+                  {t(label)}
+                </button>
+              ))}
+            </nav>
+          )}
+          {(kind === "blogs" || step <= 1) && (
+            <>
+              <div className="tabs">
+                {locales.map((l) => (
+                  <button
+                    key={l}
+                    onClick={() => setLocale(l)}
+                    className={locale === l ? "selected" : ""}
+                  >
+                    {l.toUpperCase()}{" "}
+                    {selected?.translations?.[l]?.reviewed ? "✓" : ""}
+                  </button>
+                ))}
+              </div>
+              <Form
+                key={`${selected?.id || "new"}-${locale}`}
+                fields={
+                  kind === "projects" && step === 1
+                    ? fields.filter(
+                        (f) => f.name === "title" || f.name === "description",
+                      )
+                    : fields
+                }
+                onSubmit={async (v) => {
+                  const body =
+                    kind === "blogs"
+                      ? {
+                          slug: v.slug,
+                          coverImage: v.coverImage || null,
+                          ...(v.publicationDate
+                            ? {
+                                publishedAt: new Date(
+                                  v.publicationDate + "T12:00:00+04:00",
+                                ).toISOString(),
+                              }
+                            : {}),
+                          translations: {
+                            ...selected?.translations,
+                            [locale]: {
+                              title: v.title,
+                              body: v.body,
+                              reviewed: false,
+                            },
+                          },
+                        }
+                      : {
+                          slug: v.slug ?? selected?.slug,
+                          city: v.city ?? selected?.city,
+                          showPrices:
+                            v.showPrices === undefined
+                              ? (selected?.showPrices ?? true)
+                              : v.showPrices === "true",
+                          constructionStatus:
+                            v.constructionStatus ??
+                            selected?.constructionStatus,
+                          coverImage: v.coverImage ?? selected?.coverImage,
+                          buildings: selected?.buildings || [],
+                          translations: {
+                            ...selected?.translations,
+                            [locale]: {
+                              title: v.title,
+                              description: v.description,
+                              reviewed: false,
+                            },
+                          },
+                        };
+                  await save({ ...body, published: false });
+                  if (kind === "projects" && !selected?.id) setStep(1);
+                  setError("");
+                }}
+                label={t("Save draft")}
+              />
+            </>
+          )}
           {selected?.id && (
             <>
-              <div className="action-grid">
-                <button
-                  onClick={async () => {
-                    try {
-                      const translations = { ...selected.translations };
-                      for (const target of locales.filter(
-                        (l) => l !== locale,
-                      )) {
-                        const source = selected.translations[locale];
-                        const title = await api("/translate", "POST", {
-                          text: source.title,
-                          source: locale,
-                          target,
-                        });
-                        const key = kind === "blogs" ? "body" : "description";
-                        const body = await api("/translate", "POST", {
-                          text: source[key],
-                          source: locale,
-                          target,
-                        });
-                        translations[target] = {
-                          title: title.text || title.translation,
-                          [key]: body.text || body.translation,
-                          reviewed: false,
-                        };
+              {(kind === "blogs" || step === 1 || step === 6) && (
+                <div className="action-grid">
+                  <button
+                    onClick={async () => {
+                      try {
+                        const translations = { ...selected.translations };
+                        for (const target of locales.filter(
+                          (l) => l !== locale,
+                        )) {
+                          const source = selected.translations[locale];
+                          const title = await api("/translate", "POST", {
+                            text: source.title,
+                            source: locale,
+                            target,
+                          });
+                          const key = kind === "blogs" ? "body" : "description";
+                          const body = await api("/translate", "POST", {
+                            text: source[key],
+                            source: locale,
+                            target,
+                          });
+                          translations[target] = {
+                            title: title.text || title.translation,
+                            [key]: body.text || body.translation,
+                            reviewed: false,
+                          };
+                        }
+                        await save({ translations, published: false });
+                      } catch (e) {
+                        setError((e as Error).message);
                       }
-                      await save({ translations, published: false });
-                    } catch (e) {
-                      setError((e as Error).message);
-                    }
-                  }}
-                >
-                  {t("Automatically translate")}
-                </button>
-                <button
-                  onClick={async () => {
-                    try {
-                      await save({
-                        translations: {
-                          ...selected.translations,
-                          [locale]: { ...translated, reviewed: true },
-                        },
-                      });
-                    } catch (e) {
-                      setError((e as Error).message);
-                    }
-                  }}
-                >
-                  {t("Confirm")}
-                  {locale.toUpperCase()}
-                  {t("reviewed")}
-                </button>
-                <button
-                  className="primary"
-                  onClick={async () => {
-                    try {
-                      await save({ published: !selected.published });
-                      setDialog(false);
-                    } catch (e) {
-                      setError((e as Error).message);
-                    }
-                  }}
-                >
-                  {selected.published
-                    ? t("Unpublish to draft")
-                    : t("Publish all languages")}
-                </button>
-              </div>
-              <p className="muted">
-                {t(
-                  "Publishing requires all four completed, reviewed translations. Editing text saves it as a private draft for review.",
-                )}
-              </p>
-              {kind === "projects" && (
-                <Inventory project={selected} user={user} onSave={save} />
+                    }}
+                  >
+                    {t("Automatically translate")}
+                  </button>
+                  <button
+                    onClick={async () => {
+                      try {
+                        await save({
+                          translations: {
+                            ...selected.translations,
+                            [locale]: { ...translated, reviewed: true },
+                          },
+                        });
+                      } catch (e) {
+                        setError((e as Error).message);
+                      }
+                    }}
+                  >
+                    {t("Confirm")}
+                    {locale.toUpperCase()}
+                    {t("reviewed")}
+                  </button>
+                  <button
+                    className="primary"
+                    onClick={async () => {
+                      try {
+                        await save({ published: !selected.published });
+                        setDialog(false);
+                      } catch (e) {
+                        setError((e as Error).message);
+                      }
+                    }}
+                  >
+                    {selected.published
+                      ? t("Unpublish to draft")
+                      : t("Publish all languages")}
+                  </button>
+                </div>
+              )}
+              {(kind === "blogs" || step === 1 || step === 6) && (
+                <p className="muted">
+                  {t(
+                    "Publishing requires all four completed, reviewed translations. Editing text saves it as a private draft for review.",
+                  )}
+                </p>
+              )}
+              {kind === "projects" && step >= 2 && step <= 5 && (
+                <Inventory
+                  key={step}
+                  mode={projectSteps[step]}
+                  project={selected}
+                  user={user}
+                  onSave={save}
+                />
               )}
             </>
+          )}
+          {kind === "projects" && step === 6 && selected?.id && (
+            <section className="project-review">
+              <h3>{t("Ready for review")}</h3>
+              <p>
+                {selected.city} · {selected.buildings?.length || 0} buildings ·{" "}
+                {selected.units?.length || 0} apartments
+              </p>
+              {locales.map((l) => (
+                <p key={l}>
+                  {l.toUpperCase()}:{" "}
+                  {selected.translations?.[l]?.reviewed
+                    ? "Reviewed ✓"
+                    : "Needs translation review"}
+                </p>
+              ))}
+              <p className="muted">
+                Check every building and floor outline before publishing. All
+                four languages must be complete and reviewed.
+              </p>
+            </section>
+          )}
+          {kind === "projects" && selected?.id && (
+            <footer className="project-step-footer">
+              <button disabled={step === 0} onClick={() => setStep(step - 1)}>
+                {t("Back")}
+              </button>
+              <span>
+                {step + 1} / {projectSteps.length}
+              </span>
+              <button
+                disabled={step === projectSteps.length - 1}
+                onClick={() => setStep(step + 1)}
+              >
+                {t("Next")}
+              </button>
+            </footer>
           )}
           {error && (
             <p className="error" role="alert">
@@ -327,16 +423,22 @@ function Inventory({
   project,
   user,
   onSave,
+  mode,
 }: {
+  mode: string;
   project: any;
   user: any;
   onSave: (p: any) => Promise<any>;
 }) {
-  const [tab, setTab] = useState("buildings"),
+  const tab = mode === "Apartments" ? "units" : "buildings";
+  const [annotationKind, setAnnotationKind] = useState("floors"),
     [error, setError] = useState(""),
     [buildingId, setBuildingId] = useState(project.buildings?.[0]?.id || ""),
-    [floorId, setFloorId] = useState(""),
-    [editingUnit, setEditingUnit] = useState<any>(null);
+    [floorId, setFloorId] = useState(
+      project.buildings?.[0]?.floors?.[0]?.id || "",
+    ),
+    [editingUnit, setEditingUnit] = useState<any>(null),
+    [draftPolygon, setDraftPolygon] = useState<number[][]>([]);
   const buildings = project.buildings || [],
     building = buildings.find((b: any) => b.id === buildingId),
     floors = building?.floors || [],
@@ -352,21 +454,32 @@ function Inventory({
   };
   return (
     <section>
-      <h3>{t("Explorer authoring")}</h3>
-      <div className="tabs">
-        <button onClick={() => setTab("buildings")}>
-          {t("Buildings & floors")}
-        </button>
-        <button onClick={() => setTab("units")}>
-          {t("Apartments & prices")}
-        </button>
-      </div>
+      <h3>{t(mode)}</h3>
+      {mode === "Annotations" && (
+        <div className="tabs">
+          <button
+            className={annotationKind === "floors" ? "selected" : ""}
+            onClick={() => setAnnotationKind("floors")}
+          >
+            {t("Floor outlines on building")}
+          </button>
+          <button
+            className={annotationKind === "units" ? "selected" : ""}
+            onClick={() => setAnnotationKind("units")}
+          >
+            {t("Apartment outlines on floor plan")}
+          </button>
+        </div>
+      )}
       <select
         aria-label={t("Building")}
         value={buildingId}
         onChange={(e) => {
           setBuildingId(e.target.value);
-          setFloorId("");
+          setFloorId(
+            buildings.find((b: any) => b.id === e.target.value)?.floors?.[0]
+              ?.id || "",
+          );
         }}
       >
         <option value={""}>{t("Select building")}</option>
@@ -393,101 +506,226 @@ function Inventory({
       )}
       {tab === "buildings" ? (
         <>
-          <Form
-            fields={[
-              { name: "name", label: t("Building name"), required: true },
-              {
-                name: "image",
-                label: t("Building cover image"),
-                type: "upload",
-                required: true,
-              },
-            ]}
-            onSubmit={async (v) => {
-              const id = crypto.randomUUID();
-              await saveBuildings([
-                ...buildings,
-                { id, name: v.name, image: v.image, floors: [] },
-              ]);
-              setBuildingId(id);
-            }}
-            label={t("Add building")}
-          />
-          {building && (
-            <Form
-              fields={[
-                {
-                  name: "number",
-                  label: t("Floor number"),
-                  type: "number",
-                  required: true,
-                },
-                {
-                  name: "planImage",
-                  label: t("Floor plan image"),
-                  type: "upload",
-                  required: true,
-                },
-              ]}
-              onSubmit={async (v) => {
-                const id = crypto.randomUUID();
-                await saveBuildings(
-                  buildings.map((b: any) =>
-                    b.id === buildingId
-                      ? {
-                          ...b,
-                          floors: [
-                            ...floors,
-                            {
-                              id,
-                              number: Number(v.number),
-                              planImage: v.planImage,
-                              polygon: [],
-                            },
-                          ],
-                        }
-                      : b,
-                  ),
-                );
-                setFloorId(id);
-              }}
-              label={t("Add floor")}
-            />
+          {mode === "Buildings" && (
+            <>
+              <div className="project-building-list">
+                {buildings.map((b: any) => (
+                  <button
+                    key={b.id}
+                    className={buildingId === b.id ? "selected" : ""}
+                    onClick={() => setBuildingId(b.id)}
+                  >
+                    <img src={mediaUrl(b.coverImage || b.image, true)} alt="" />
+                    <strong>{b.name}</strong>
+                    <small>{b.floors?.length || 0} floors</small>
+                  </button>
+                ))}
+              </div>
+              {building && (
+                <details className="project-entity-edit">
+                  <summary>Edit selected building</summary>
+                  <Form
+                    key={building.id}
+                    fields={[
+                      {
+                        name: "name",
+                        label: t("Building name"),
+                        required: true,
+                        value: building.name,
+                      },
+                      {
+                        name: "coverImage",
+                        label: t("Building cover image"),
+                        type: "upload",
+                        value: building.coverImage || building.image,
+                      },
+                    ]}
+                    onSubmit={async (v) => {
+                      await saveBuildings(
+                        buildings.map((b: any) =>
+                          b.id === buildingId
+                            ? { ...b, name: v.name, coverImage: v.coverImage }
+                            : b,
+                        ),
+                      );
+                    }}
+                  />
+                </details>
+              )}
+              <h4>{t("Add building")}</h4>
+              <Form
+                fields={[
+                  { name: "name", label: t("Building name"), required: true },
+                  {
+                    name: "image",
+                    label: t("Building cover image"),
+                    type: "upload",
+                    required: true,
+                  },
+                ]}
+                onSubmit={async (v) => {
+                  const id = crypto.randomUUID();
+                  await saveBuildings([
+                    ...buildings,
+                    { id, name: v.name, coverImage: v.image, floors: [] },
+                  ]);
+                  setBuildingId(id);
+                }}
+                label={t("Add building")}
+              />
+            </>
           )}
-          {building && floors.length > 0 && (
-            <Annotator
-              image={building.image}
-              entities={floors.map((f: any) => ({
-                ...f,
-                name: `Floor ${f.number}`,
-              }))}
-              onSave={async (polygons) => {
-                await saveBuildings(
-                  buildings.map((b: any) =>
-                    b.id === buildingId
-                      ? {
-                          ...b,
-                          floors: floors.map((f: any) => ({
-                            ...f,
-                            polygon:
-                              polygons.find((p) => p.id === f.id)?.points ||
-                              f.polygon,
-                          })),
-                        }
-                      : b,
-                  ),
-                );
-              }}
-            />
+          {mode === "Floors" && building && (
+            <>
+              <div className="project-floor-list">
+                {floors.map((f: any) => (
+                  <div className="list-row" key={f.id}>
+                    <strong>
+                      {t("Floor")} {f.number}
+                    </strong>
+                    <span>
+                      {f.polygon?.length >= 3
+                        ? "Outline saved"
+                        : "Outline needed"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              {floor && (
+                <details className="project-entity-edit">
+                  <summary>Edit selected floor plan</summary>
+                  <Form
+                    key={floor.id}
+                    fields={[
+                      {
+                        name: "number",
+                        label: t("Floor number"),
+                        type: "number",
+                        required: true,
+                        value: floor.number,
+                      },
+                      {
+                        name: "image",
+                        label: t("Floor plan image"),
+                        type: "upload",
+                        value: floor.image || floor.planImage,
+                      },
+                    ]}
+                    onSubmit={async (v) => {
+                      await saveBuildings(
+                        buildings.map((b: any) =>
+                          b.id === buildingId
+                            ? {
+                                ...b,
+                                floors: floors.map((f: any) =>
+                                  f.id === floorId
+                                    ? {
+                                        ...f,
+                                        number: Number(v.number),
+                                        image: v.image,
+                                      }
+                                    : f,
+                                ),
+                              }
+                            : b,
+                        ),
+                      );
+                    }}
+                  />
+                </details>
+              )}
+              <h4>{t("Add floor")}</h4>
+              <Form
+                fields={[
+                  {
+                    name: "number",
+                    label: t("Floor number"),
+                    type: "number",
+                    required: true,
+                  },
+                  {
+                    name: "planImage",
+                    label: t("Floor plan image"),
+                    type: "upload",
+                    required: true,
+                  },
+                ]}
+                onSubmit={async (v) => {
+                  const id = crypto.randomUUID();
+                  await saveBuildings(
+                    buildings.map((b: any) =>
+                      b.id === buildingId
+                        ? {
+                            ...b,
+                            floors: [
+                              ...floors,
+                              {
+                                id,
+                                number: Number(v.number),
+                                image: v.planImage,
+                                polygon: [],
+                              },
+                            ],
+                          }
+                        : b,
+                    ),
+                  );
+                  setFloorId(id);
+                }}
+                label={t("Add floor")}
+              />
+            </>
           )}
+          {mode === "Annotations" &&
+            annotationKind === "floors" &&
+            building &&
+            floors.length > 0 && (
+              <Annotator
+                key={buildingId}
+                image={building.coverImage || building.image}
+                entities={floors.map((f: any) => ({
+                  ...f,
+                  name: `Floor ${f.number}`,
+                }))}
+                onSave={async (polygons) => {
+                  await saveBuildings(
+                    buildings.map((b: any) =>
+                      b.id === buildingId
+                        ? {
+                            ...b,
+                            floors: floors.map((f: any) => ({
+                              ...f,
+                              polygon:
+                                polygons.find((p) => p.id === f.id)?.points ||
+                                f.polygon,
+                            })),
+                          }
+                        : b,
+                    ),
+                  );
+                }}
+              />
+            )}
         </>
       ) : (
         <>
           {!floor && (
             <p className="muted">{t("Select a building and floor first.")}</p>
           )}
-          {floor && (
+          {mode === "Apartments" && floor && (
             <>
+              <p className="muted">
+                Draw the apartment on the floor plan, complete its outline, then
+                save the outline to fill the coordinates below.
+              </p>
+              <Annotator
+                key={`new-${floorId}`}
+                image={floor.image || floor.planImage}
+                entities={[{ id: "new-apartment", name: "New apartment" }]}
+                onSave={async (polygons) =>
+                  setDraftPolygon(polygons[0]?.points || [])
+                }
+              />
               <Form
                 fields={[
                   {
@@ -529,6 +767,7 @@ function Inventory({
                   },
                   {
                     name: "polygon",
+                    value: draftPolygon.map((p) => p.join(",")).join("; "),
                     label: t("Apartment corners x,y; x,y; x,y (0–100)"),
                     required: true,
                   },
@@ -550,54 +789,67 @@ function Inventory({
                 }}
                 label={t("Add apartment")}
               />
-              <Annotator
-                image={floor.planImage}
-                entities={units
-                  .filter((u: any) => u.floorId === floorId)
-                  .map((u: any) => ({ ...u, name: u.number }))}
-                onSave={async (polygons) => {
-                  for (const p of polygons)
-                    await api(`/units/${p.id}`, "PATCH", { polygon: p.points });
-                  await reload();
-                }}
-              />
             </>
           )}
-          {units.map((u: any) => (
-            <div className="list-row" key={u.id}>
-              <div>
-                <strong>{u.number}</strong>
-                <small>
-                  {u.area} m² / {u.status} / {u.price} {u.priceCurrency}
-                </small>
+          {units
+            .filter((u: any) => !floorId || u.floorId === floorId)
+            .map((u: any) => (
+              <div className="list-row" key={u.id}>
+                <div>
+                  <strong>{u.number}</strong>
+                  <small>
+                    {u.area} m² / {u.status} / {u.price} {u.priceCurrency}
+                  </small>
+                </div>
+                <button onClick={() => setEditingUnit(u)}>{t("Edit")}</button>
+                {user.role === "SUPER_ADMIN" && (
+                  <button
+                    onClick={async () => {
+                      const min = prompt(
+                        "Private minimum sale price",
+                        u.minimumPrice || "",
+                      );
+                      if (min === null) return;
+                      try {
+                        await api(`/units/${u.id}`, "PATCH", {
+                          minimumPrice: min.trim() ? Number(min) : null,
+                          minimumCurrency: min.trim() ? u.priceCurrency : null,
+                        });
+                        await reload();
+                      } catch (e) {
+                        setError((e as Error).message);
+                      }
+                    }}
+                  >
+                    {t("Minimum price")}
+                  </button>
+                )}
               </div>
-              <button onClick={() => setEditingUnit(u)}>{t("Edit")}</button>
-              {user.role === "SUPER_ADMIN" && (
-                <button
-                  onClick={async () => {
-                    const min = prompt(
-                      "Private minimum sale price",
-                      u.minimumPrice || "",
-                    );
-                    if (min === null) return;
-                    try {
-                      await api(`/units/${u.id}`, "PATCH", {
-                        minimumPrice: min.trim() ? Number(min) : null,
-                        minimumCurrency: min.trim() ? u.priceCurrency : null,
-                      });
-                      await reload();
-                    } catch (e) {
-                      setError((e as Error).message);
-                    }
-                  }}
-                >
-                  {t("Minimum price")}
-                </button>
-              )}
-            </div>
-          ))}
+            ))}
         </>
       )}
+      {mode === "Annotations" && annotationKind === "units" && floor && (
+        <Annotator
+          key={floorId}
+          image={floor.image || floor.planImage}
+          entities={units
+            .filter((u: any) => u.floorId === floorId)
+            .map((u: any) => ({ ...u, name: `#${u.number}` }))}
+          onSave={async (polygons) => {
+            for (const polygon of polygons)
+              await api(`/units/${polygon.id}`, "PATCH", {
+                polygon: polygon.points,
+              });
+            await reload();
+          }}
+        />
+      )}
+      {mode === "Annotations" &&
+        (!building ||
+          !floors.length ||
+          (annotationKind === "units" && !floor)) && (
+          <Empty text="Add a building and floor plan before drawing outlines." />
+        )}
       {editingUnit && (
         <Modal
           title={`${t("Apartment")} #${editingUnit.number}`}
@@ -695,10 +947,18 @@ function Annotator({
   onSave: (p: any[]) => Promise<void>;
 }) {
   const [points, setPoints] = useState<number[][]>([]),
-    [polygons, setPolygons] = useState<any[]>([]),
+    [polygons, setPolygons] = useState<any[]>(
+      entities
+        .filter((e) => e.polygon?.length >= 3)
+        .map((e) => ({ id: e.id, points: e.polygon })),
+    ),
     [target, setTarget] = useState(entities[0]?.id || ""),
     [error, setError] = useState(""),
     [coordinateText, setCoordinateText] = useState("");
+  useEffect(() => {
+    if (!entities.some((e) => e.id === target))
+      setTarget(entities[0]?.id || "");
+  }, [entities, target]);
   return (
     <div className="annotator">
       <p>
@@ -709,7 +969,11 @@ function Annotator({
       <select
         aria-label={t("Region to annotate")}
         value={target}
-        onChange={(e) => setTarget(e.target.value)}
+        onChange={(e) => {
+          setTarget(e.target.value);
+          setPoints([]);
+          setCoordinateText("");
+        }}
       >
         {entities.map((e) => (
           <option key={e.id} value={e.id}>
@@ -732,11 +996,20 @@ function Annotator({
           setCoordinateText(next.map((p) => p.join(",")).join("; "));
         }}
       >
-        <img src={mediaUrl(image, true)} alt="Plan annotation canvas" />
+        <img
+          src={mediaUrl(image, true)}
+          alt="Plan annotation canvas"
+          onError={() =>
+            setError(
+              "Image could not load. Check the building cover or floor plan URL.",
+            )
+          }
+        />
         <svg viewBox="0 0 100 100" preserveAspectRatio="none">
-          {polygons.map((p, i) => (
+          {polygons.map((p) => (
             <polygon
-              key={i}
+              key={p.id}
+              className={p.id === target ? "annotation-selected" : ""}
               points={p.points.map((x: number[]) => x.join(",")).join(" ")}
             />
           ))}
