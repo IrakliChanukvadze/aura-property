@@ -1,4 +1,5 @@
 import { t } from "./i18n";
+import "./kanban.css";
 import { useEffect, useState } from "react";
 import { api, download, mediaUrl } from "./api";
 import {
@@ -11,6 +12,27 @@ import {
   Money,
   UploadField,
 } from "./ui";
+const kanbanLabels: Record<string, Record<string, string>> = {
+  "All teams": { ka: "ყველა გუნდი", ru: "Все команды", he: "כל הצוותים" },
+  "Drag cards to another stage, or open a card and choose Move stage.": {
+    ka: "გადაიტანეთ ბარათი სხვა ეტაპზე, ან გახსენით და აირჩიეთ ეტაპის შეცვლა.",
+    ru: "Перетащите карточку на другой этап или откройте её и выберите смену этапа.",
+    he: "גררו כרטיס לשלב אחר, או פתחו אותו ובחרו שינוי שלב.",
+  },
+  "Record the call outcome to move this lead.": {
+    ka: "ლიდის გადასატანად ჩაწერეთ ზარის შედეგი.",
+    ru: "Чтобы переместить лид, запишите результат звонка.",
+    he: "רשמו את תוצאת השיחה כדי להעביר את הליד.",
+  },
+  "Lead moved": {
+    ka: "ლიდი გადატანილია",
+    ru: "Лид перемещён",
+    he: "הליד הועבר",
+  },
+};
+const kt = (text: string) =>
+  kanbanLabels[text]?.[localStorage.getItem("aura-admin-locale") || "en"] ||
+  text;
 const stages = [
   "NEW",
   "NOT_ANSWERED",
@@ -99,7 +121,8 @@ export function Leads({
   user: any;
 }) {
   const [projects, setProjects] = useState<any[]>([]),
-    [agents, setAgents] = useState<any[]>([]);
+    [agents, setAgents] = useState<any[]>([]),
+    [teams, setTeams] = useState<any[]>([]);
   useEffect(() => {
     api<any[]>("/projects")
       .then(setProjects)
@@ -107,7 +130,11 @@ export function Leads({
     api<any[]>("/users")
       .then(setAgents)
       .catch(() => {});
-  }, []);
+    if (user.role === "SUPER_ADMIN")
+      api<any[]>("/teams")
+        .then(setTeams)
+        .catch(() => {});
+  }, [user.role]);
   const units = projects.flatMap((p) =>
     (p.units || []).map((u: any) => ({
       ...u,
@@ -135,6 +162,12 @@ export function Leads({
     [filter, setFilter] = useState(""),
     [projectFilter, setProjectFilter] = useState(""),
     [agentFilter, setAgentFilter] = useState(""),
+    [teamFilter, setTeamFilter] = useState(""),
+    [draggedId, setDraggedId] = useState<string | null>(null),
+    [dropStage, setDropStage] = useState(""),
+    [moveBusy, setMoveBusy] = useState(false),
+    [moveMessage, setMoveMessage] = useState(""),
+    [callOutcome, setCallOutcome] = useState("ANSWERED"),
     [sourceFilter, setSourceFilter] = useState(""),
     [from, setFrom] = useState(""),
     [to, setTo] = useState(""),
@@ -143,7 +176,7 @@ export function Leads({
     [busy, setBusy] = useState(false);
   const load = () =>
     api<any[]>(
-      `/leads?scope=${mode}&search=${encodeURIComponent(query)}${filter ? `&stage=${filter}` : ""}&projectId=${projectFilter}&agentId=${agentFilter}&source=${sourceFilter}&from=${from}&to=${to}`,
+      `/leads?scope=${mode}&search=${encodeURIComponent(query)}${filter ? `&stage=${filter}` : ""}&projectId=${projectFilter}&agentId=${agentFilter}${user.role === "SUPER_ADMIN" && teamFilter ? `&teamId=${encodeURIComponent(teamFilter)}` : ""}&source=${sourceFilter}&from=${from}&to=${to}`,
     )
       .then((data) =>
         setLeads(
@@ -157,7 +190,17 @@ export function Leads({
       .catch((e) => setError(e.message));
   useEffect(() => {
     load();
-  }, [mode, query, filter, projectFilter, agentFilter, sourceFilter, from, to]);
+  }, [
+    mode,
+    query,
+    filter,
+    projectFilter,
+    agentFilter,
+    teamFilter,
+    sourceFilter,
+    from,
+    to,
+  ]);
   const show = async (l: any) => {
     try {
       setSelected(await api(`/leads/${l.id}`));
@@ -173,6 +216,36 @@ export function Leads({
   const action = async (path: string, body: any) => {
     await api(`/leads/${selected.id}/${path}`, "POST", body);
     await changed();
+  };
+  const moveLead = async (id: string, destination: string) => {
+    const current = leads.find((lead) => lead.id === id);
+    setDraggedId(null);
+    setDropStage("");
+    if (!current || current.stage === destination || moveBusy) return;
+    setError("");
+    setMoveMessage("");
+    setMoveBusy(true);
+    try {
+      if (
+        destination === "NOT_ANSWERED" ||
+        destination === "VIEWING_SCHEDULED" ||
+        (destination === "CONTACTED" && !current.answered)
+      ) {
+        setSelected(await api(`/leads/${id}`));
+        setCallOutcome(
+          destination === "NOT_ANSWERED" ? "NO_ANSWER" : "ANSWERED",
+        );
+        setDialog(destination === "VIEWING_SCHEDULED" ? "viewing" : "call");
+      } else {
+        await api(`/leads/${id}/stage`, "POST", { stage: destination });
+        await load();
+        setMoveMessage(`${kt("Lead moved")}: ${title(destination)}`);
+      }
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setMoveBusy(false);
+    }
   };
   const visible = leads.filter(
     (l) =>
@@ -243,17 +316,36 @@ export function Leads({
             </option>
           ))}
         </select>
+        {user.role === "SUPER_ADMIN" && (
+          <select
+            aria-label={kt("All teams")}
+            value={teamFilter}
+            onChange={(e) => {
+              setTeamFilter(e.target.value);
+              setAgentFilter("");
+            }}
+          >
+            <option value="">{kt("All teams")}</option>
+            {teams.map((team) => (
+              <option key={team.id} value={team.id}>
+                {team.name}
+              </option>
+            ))}
+          </select>
+        )}
         <select
           aria-label={t("Agent")}
           value={agentFilter}
           onChange={(e) => setAgentFilter(e.target.value)}
         >
           <option value="">{t("Agent")}</option>
-          {agents.map((a) => (
-            <option key={a.id} value={a.id}>
-              {a.name}
-            </option>
-          ))}
+          {agents
+            .filter((a) => !teamFilter || a.teamId === teamFilter)
+            .map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.name}
+              </option>
+            ))}
         </select>
         <select
           aria-label={t("Lead source")}
@@ -285,10 +377,42 @@ export function Leads({
           {error}
         </p>
       )}
+      {mode === "active" && (
+        <>
+          <p className="muted kanban-help">
+            {kt(
+              "Drag cards to another stage, or open a card and choose Move stage.",
+            )}
+          </p>
+          <p className="kanban-status" role="status" aria-live="polite">
+            {moveMessage}
+          </p>
+        </>
+      )}
       {mode === "active" ? (
-        <div className="kanban">
+        <div className="kanban" aria-busy={moveBusy}>
           {stages.map((stage) => (
-            <section className="column" key={stage}>
+            <section
+              className={`column${dropStage === stage ? " drop-target" : ""}`}
+              key={stage}
+              onDragOver={(e) => {
+                if (draggedId && !moveBusy) {
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = "move";
+                  setDropStage(stage);
+                }
+              }}
+              onDragLeave={(e) => {
+                if (!e.currentTarget.contains(e.relatedTarget as Node))
+                  setDropStage("");
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                const id =
+                  e.dataTransfer.getData("application/aura-lead") || draggedId;
+                if (id) void moveLead(id, stage);
+              }}
+            >
               <h3>
                 <i className={"dot " + stage} />
                 {title(stage)}
@@ -298,9 +422,19 @@ export function Leads({
                 .filter((l) => l.stage === stage)
                 .map((l) => (
                   <button
-                    className="lead-card"
+                    className={`lead-card${draggedId === l.id ? " is-dragging" : ""}`}
                     key={l.id}
-                    onClick={() => show(l)}
+                    draggable={!moveBusy}
+                    onDragStart={(e) => {
+                      setDraggedId(l.id);
+                      e.dataTransfer.effectAllowed = "move";
+                      e.dataTransfer.setData("application/aura-lead", l.id);
+                    }}
+                    onDragEnd={() => {
+                      setDraggedId(null);
+                      setDropStage("");
+                    }}
+                    onClick={() => !moveBusy && show(l)}
                   >
                     <div>
                       <span className="initial">
@@ -540,7 +674,12 @@ export function Leads({
                 <button onClick={() => setDialog("stage")}>
                   {t("Move stage")}
                 </button>
-                <button onClick={() => setDialog("call")}>
+                <button
+                  onClick={() => {
+                    setCallOutcome("ANSWERED");
+                    setDialog("call");
+                  }}
+                >
                   {t("Log call")}
                 </button>
                 <button onClick={() => setDialog("followup")}>
@@ -670,26 +809,32 @@ export function Leads({
             />
           )}
           {dialog === "call" && (
-            <Form
-              fields={[
-                {
-                  name: "outcome",
-                  label: t("Outcome"),
-                  options: [
-                    { value: "ANSWERED", label: t("Answered") },
-                    { value: "NO_ANSWER", label: t("No answer") },
-                  ],
-                },
-                {
-                  name: "comment",
-                  label: t("Call comment"),
-                  required: true,
-                  type: "textarea",
-                },
-              ]}
-              onSubmit={(v) => action("calls", v)}
-              label={t("Log call")}
-            />
+            <>
+              <p className="muted">
+                {kt("Record the call outcome to move this lead.")}
+              </p>
+              <Form
+                fields={[
+                  {
+                    name: "outcome",
+                    label: t("Outcome"),
+                    value: callOutcome,
+                    options: [
+                      { value: "ANSWERED", label: t("Answered") },
+                      { value: "NO_ANSWER", label: t("No answer") },
+                    ],
+                  },
+                  {
+                    name: "comment",
+                    label: t("Call comment"),
+                    required: true,
+                    type: "textarea",
+                  },
+                ]}
+                onSubmit={(v) => action("calls", v)}
+                label={t("Log call")}
+              />
+            </>
           )}
           {dialog === "followup" && (
             <Form

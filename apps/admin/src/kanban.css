@@ -1,0 +1,33 @@
+.kanban .column {
+  transition:
+    outline-color 120ms,
+    background-color 120ms;
+}
+.kanban .column.drop-target {
+  outline: 2px solid var(--accent, #777f5e);
+  outline-offset: -2px;
+  background: color-mix(in srgb, var(--accent, #777f5e) 15%, var(--surface));
+}
+.kanban .lead-card[draggable="true"] {
+  cursor: grab;
+}
+.kanban .lead-card[draggable="true"]:active {
+  cursor: grabbing;
+}
+.kanban .lead-card.is-dragging {
+  opacity: 0.45;
+}
+.kanban-help {
+  font-size: 12px;
+  margin: 0 0 10px;
+}
+.kanban-status {
+  font-size: 12px;
+  min-height: 1em;
+  margin: 0 0 6px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .kanban .column {
+    transition: none;
+  }
+}
