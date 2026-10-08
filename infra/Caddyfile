@@ -12,7 +12,6 @@
 	encode zstd gzip
 	header {
 		X-Content-Type-Options nosniff
-		Referrer-Policy strict-origin-when-cross-origin
 		-Server
 	}
 	# No access logs: invitation URLs and CRM query data must not enter proxy logs.
@@ -20,11 +19,13 @@
 
 www.auraproperty.ge {
 	import common
+	header Referrer-Policy strict-origin-when-cross-origin
 	redir https://auraproperty.ge{uri} permanent
 }
 
 auraproperty.ge {
 	import common
+	header Referrer-Policy strict-origin-when-cross-origin
 	reverse_proxy web:3000 {
 		header_up X-Forwarded-For {client_ip}
 		header_up -CF-Connecting-IP
