@@ -1,6 +1,6 @@
 # Production deployment
 
-Aura launched on 2026-10-08. Application revision: `35bc0f4bf2ec6c815c6159fae6ec9ec29f4fe69e`. [Launch evidence and outstanding work](../../tasks/implementation/AURA-030.md). Proxy configuration additionally includes `c3eb5d3d2f2a6e8f19d6d425cf8e18dbd24b30cb` (verified no-referrer on admin/API). Later documentation commits do not change the deployed images.
+Aura launched on 2026-10-08. Application revision: `980e695a8f2c7e06a0d0a1b99827ca055d14ffa4`. [Launch evidence and outstanding work](../../tasks/implementation/AURA-030.md). Proxy configuration additionally includes `c3eb5d3d2f2a6e8f19d6d425cf8e18dbd24b30cb` (verified no-referrer on admin/API). Later documentation commits do not change the deployed images.
 
 ## Live services and cost
 
@@ -16,7 +16,7 @@ Docker Compose runs Next.js web, Vite/admin nginx, Fastify API/jobs, PostgreSQL1
 
 Server checkout is `/opt/aura`; private config `.env.production.local` is0600. Do not print, commit or source that dotenv file as shell code. `infra/production.env.example` documents variable names. Provider and database credentials are runtime-only; frontend build arguments contain public URLs only.
 
-The initial owner invitation was delivered to the owner-approved address. The owner chooses a password; production has no demo logins. Never run development seed scripts here. `owner:init` refuses another bootstrap once a SuperAdmin exists. Normal staff invitations follow team setup.
+The initial owner invitation was delivered and the account was activated. Users choose their own passwords; production has no demo logins. Never run development seed scripts here. `owner:init` refuses another bootstrap once a SuperAdmin exists. Normal staff invitations follow team setup.
 
 Only approved public content was imported with `scripts/public-content.mjs`: Tbilisi Boulevard and three public team profiles, no CRM fixtures. First inquiries are verified. SMS remains deferred by explicit owner approval; repeat inquiries requiring OTP fail closed. No production FX rate is configured. See AURA-030 for catalog and operational follow-ups.
 
@@ -42,4 +42,4 @@ All backups are currently retained; pruning is not automated. Minimum policy tar
 
 ## Verification scope
 
-API81/81 tests, all workspace typechecks, native release build, Cloudflare HTTPS smoke, synthetic live inquiry/duplicate behavior, owner email delivery and encrypted offsite restore passed. The owner-selected password/login and staff-role workflows still need the owner to accept the invitation. Small idle memory use is not a load test; measure memory/swap/latency and resize before sustained pressure. Analytics/Search Console are separate post-launch work.
+Latest release:92/92 API tests, all workspace typechecks/builds, zero dependency vulnerabilities and native release build passed. Content/backup script checks:15 passed,1 skipped. Cloudflare HTTPS smoke and live centered apartment modal passed. The invitation/deactivation UI was checked locally with a disposable pending account and no real mail delivery; live unauthenticated resend returns401. Earlier launch evidence covers synthetic live inquiry/duplicate behavior, owner email delivery and encrypted offsite restore. See AURA-031 and AURA-032 for exact release evidence. Small idle memory use is not a load test; measure memory/swap/latency and resize before sustained pressure. Analytics/Search Console are separate post-launch work.

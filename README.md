@@ -4,7 +4,7 @@ Standalone residential-complex agency website and admin CRM. TypeScript monorepo
 
 ## Production
 
-Published 2026-10-08: [website](https://auraproperty.ge), [admin](https://admin.auraproperty.ge). Deployed application revision: `35bc0f4bf2ec6c815c6159fae6ec9ec29f4fe69e`. GitHub main may contain newer documentation; a push does not automatically deploy.
+Published 2026-10-08: [website](https://auraproperty.ge), [admin](https://admin.auraproperty.ge). Deployed application revision: `980e695a8f2c7e06a0d0a1b99827ca055d14ffa4`. GitHub main may contain newer documentation; a push does not automatically deploy.
 
 Aura has its own Frankfurt DigitalOcean server and database, behind Cloudflare Full (strict). Approved hosting: $18/month plus $3.60 weekly backups, before tax. Daily encrypted database backups to R2 and recovery into a disposable database are verified. See [deployment runbook](docs/architecture/deployment.md) and [launch evidence](tasks/implementation/AURA-030.md).
 
@@ -46,6 +46,6 @@ The earlier full production builds, dependency audit and Linux API container smo
 
 ## Release boundary
 
-Production contains the approved Tbilisi Boulevard catalog and three public team profiles, without local CRM fixtures or demo accounts. The owner invitation was delivered; staff setup and owner password selection remain user actions. New website inquiries are verified. The owner explicitly approved launch with SMS deferred: repeat inquiries still require OTP and fail closed until SMS is configured. No production FX rate is configured, so GEL conversion remains unavailable. Review outstanding content and operational follow-ups in AURA-030. Development providers are disabled in production.
+Production contains the approved Tbilisi Boulevard catalog and three public team profiles, without local CRM fixtures or demo accounts. The owner activated the account; staff setup and password selection remain user actions. People & leave now shows pending activation, eligible Resend invitation controls, and a SuperAdmin-only Deactivate confirmation. New website inquiries are verified. The owner explicitly approved launch with SMS deferred: repeat inquiries still require OTP and fail closed until SMS is configured. No production FX rate is configured, so GEL conversion remains unavailable. Review outstanding content and operational follow-ups in AURA-030. Development providers are disabled in production.
 
 The costed `auraproperty.ge` launch plan is in [docs/architecture/auraproperty-ge-launch-plan.md](docs/architecture/auraproperty-ge-launch-plan.md), with a secret-free configuration template at [infra/production.env.example](infra/production.env.example).
