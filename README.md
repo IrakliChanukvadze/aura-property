@@ -4,7 +4,7 @@ Standalone residential-complex agency website and admin CRM. TypeScript monorepo
 
 ## Production
 
-Published 2026-10-08: [website](https://auraproperty.ge), [admin](https://admin.auraproperty.ge). Deployed application revision: `5f7b77002c3745934a74f2323edca7ef50e9e5ca`. GitHub main may contain newer documentation; a push does not automatically deploy.
+Published 2026-10-08: [website](https://auraproperty.ge), [admin](https://admin.auraproperty.ge). Deployed application revision: `35bc0f4bf2ec6c815c6159fae6ec9ec29f4fe69e`. GitHub main may contain newer documentation; a push does not automatically deploy.
 
 Aura has its own Frankfurt DigitalOcean server and database, behind Cloudflare Full (strict). Approved hosting: $18/month plus $3.60 weekly backups, before tax. Daily encrypted database backups to R2 and recovery into a disposable database are verified. See [deployment runbook](docs/architecture/deployment.md) and [launch evidence](tasks/implementation/AURA-030.md).
 

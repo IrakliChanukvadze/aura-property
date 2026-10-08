@@ -1,6 +1,6 @@
 import { t } from "./i18n";
-import { useEffect, useState } from "react";
-import { api } from "./api";
+import { useEffect, useRef, useState } from "react";
+import { api, ApiError } from "./api";
 import { Form, Modal, Empty, Money, languages, type Field } from "./ui";
 export function Dashboard() {
   const [month, setMonth] = useState(
@@ -269,8 +269,11 @@ export function Personnel({ user }: { user: any }) {
     [balance, setBalance] = useState<any>({}),
     [activeLeads, setActiveLeads] = useState<any[]>([]),
     [error, setError] = useState(""),
+    [message, setMessage] = useState(""),
+    [resendingUserId, setResendingUserId] = useState<string | null>(null),
     [dialog, setDialog] = useState(""),
     [selected, setSelected] = useState<any>(null);
+  const resendInFlight = useRef(false);
   const manager =
     user.role === "SUPER_ADMIN" || user.role === "TEAM_LEAD" || user.actingLead;
   const canReviewLeave = (request: any) => {
@@ -311,6 +314,40 @@ export function Personnel({ user }: { user: any }) {
     setDialog("");
     await load();
   };
+  const resendInvitation = async (target: any) => {
+    if (!target.canResendInvitation || resendInFlight.current) return;
+    resendInFlight.current = true;
+    setResendingUserId(target.id);
+    setError("");
+    setMessage("");
+    try {
+      await api(`/users/${target.id}/resend-invitation`, "POST");
+      setMessage(
+        `${target.email}: ${t("Invitation sent. Use the newest email link; it is valid for 48 hours.")}`,
+      );
+      setUsers(await api<any[]>("/users"));
+    } catch (e) {
+      const invitationErrors: Record<string, string> = {
+        INVITATION_COOLDOWN:
+          "Please wait a minute before sending another invitation.",
+        EMAIL_UNAVAILABLE:
+          "Invitation email could not be sent. Please try again.",
+        ACCOUNT_ACTIVE: "This user has already activated their account.",
+        ACCOUNT_INACTIVE:
+          "Reactivate this user before resending an invitation.",
+        FORBIDDEN: "You do not have permission to resend this invitation.",
+      };
+      setError(
+        t(
+          (e instanceof ApiError && invitationErrors[e.code]) ||
+            (e as Error).message,
+        ),
+      );
+    } finally {
+      resendInFlight.current = false;
+      setResendingUserId(null);
+    }
+  };
   return (
     <>
       <div className="section-toolbar">
@@ -336,7 +373,12 @@ export function Personnel({ user }: { user: any }) {
           )}
         </div>
       </div>
-      {error && <p className="error">{error}</p>}
+      {error && (
+        <p role="alert" className="error">
+          {error}
+        </p>
+      )}
+      {message && <p role="status">{message}</p>}
       {user.role === "SUPER_ADMIN" && (
         <section className="panel">
           <h2>{t("Teams")}</h2>
@@ -381,7 +423,12 @@ export function Personnel({ user }: { user: any }) {
                 </td>
                 <td>{u.role}</td>
                 <td>{teams.find((t) => t.id === u.teamId)?.name || "—"}</td>
-                <td>{u.active ? t("Active") : "Deactivated"}</td>
+                <td>
+                  {u.active ? t("Active") : t("Deactivated")}
+                  {u.invitationPending && (
+                    <small className="block">{t("Pending activation")}</small>
+                  )}
+                </td>
                 <td>
                   {manager && (
                     <button
@@ -403,6 +450,31 @@ export function Personnel({ user }: { user: any }) {
                       {t("Manage")}
                     </button>
                   )}
+                  {u.canResendInvitation && (
+                    <button
+                      disabled={resendingUserId !== null}
+                      aria-label={`${t("Resend invitation")}: ${u.email}`}
+                      onClick={() => resendInvitation(u)}
+                    >
+                      {resendingUserId === u.id
+                        ? t("Sending…")
+                        : t("Resend invitation")}
+                    </button>
+                  )}
+                  {user.role === "SUPER_ADMIN" &&
+                    u.active &&
+                    u.role !== "SUPER_ADMIN" && (
+                      <button
+                        className="danger"
+                        aria-label={`${t("Deactivate user")}: ${u.name}`}
+                        onClick={() => {
+                          setSelected(u);
+                          setDialog("deactivate");
+                        }}
+                      >
+                        {t("Deactivate")}
+                      </button>
+                    )}
                 </td>
               </tr>
             ))}
@@ -545,12 +617,14 @@ export function Personnel({ user }: { user: any }) {
               : dialog === "schedule"
                 ? "Recurring weekly schedule"
                 : dialog === "permissions"
-                  ? "User settings"
-                  : dialog === "approve"
-                    ? "Approve vacation"
-                    : dialog === "team"
-                      ? t("Create team")
-                      : t("Request vacation")
+                  ? t("User settings")
+                  : dialog === "deactivate"
+                    ? t("Deactivate user")
+                    : dialog === "approve"
+                      ? "Approve vacation"
+                      : dialog === "team"
+                        ? t("Create team")
+                        : t("Request vacation")
           }
           onClose={() => setDialog("")}
         >
@@ -767,29 +841,83 @@ export function Personnel({ user }: { user: any }) {
               }}
             />
           )}
+          {dialog === "deactivate" &&
+            user.role === "SUPER_ADMIN" &&
+            selected?.active &&
+            selected.role !== "SUPER_ADMIN" && (
+              <>
+                <p>
+                  <strong>{selected.name}</strong> <bdi>{selected.email}</bdi>
+                </p>
+                <p>
+                  {t(
+                    "Deactivation immediately signs this user out and blocks login. Their history is kept, and you can restore access in Manage.",
+                  )}
+                </p>
+                <Form
+                  fields={[
+                    {
+                      name: "redistribution",
+                      label: t("Active lead redistribution on deactivation"),
+                      options: [
+                        { value: "TEAM_LEAD", label: t("Team-lead inbox") },
+                        {
+                          value: "AUTOMATIC",
+                          label: t("Automatic distribution"),
+                        },
+                      ],
+                    },
+                  ]}
+                  label={t("Deactivate user")}
+                  onSubmit={async (v) => {
+                    setError("");
+                    setMessage("");
+                    await api(`/users/${selected.id}`, "PATCH", {
+                      active: false,
+                      redistribution: v.redistribution,
+                    });
+                    setMessage(
+                      `${selected.name}: ${t("User deactivated. Access is blocked.")}`,
+                    );
+                    await close();
+                  }}
+                >
+                  <button type="button" onClick={() => setDialog("")}>
+                    {t("Cancel")}
+                  </button>
+                </Form>
+              </>
+            )}
           {dialog === "permissions" && (
             <Form
               fields={[
-                {
-                  name: "active",
-                  label: t("Account access"),
-                  value: String(selected.active),
-                  options: [
-                    { value: "true", label: t("Active") },
-                    {
-                      value: "false",
-                      label: t("Deactivated — sessions blocked"),
-                    },
-                  ],
-                },
-                {
-                  name: "redistribution",
-                  label: t("Active lead redistribution on deactivation"),
-                  options: [
-                    { value: "TEAM_LEAD", label: t("Team-lead inbox") },
-                    { value: "AUTOMATIC", label: t("Automatic distribution") },
-                  ],
-                },
+                ...(selected.role !== "SUPER_ADMIN"
+                  ? [
+                      {
+                        name: "active",
+                        label: t("Account access"),
+                        value: String(selected.active),
+                        options: [
+                          { value: "true", label: t("Active") },
+                          {
+                            value: "false",
+                            label: t("Deactivated — sessions blocked"),
+                          },
+                        ],
+                      },
+                      {
+                        name: "redistribution",
+                        label: t("Active lead redistribution on deactivation"),
+                        options: [
+                          { value: "TEAM_LEAD", label: t("Team-lead inbox") },
+                          {
+                            value: "AUTOMATIC",
+                            label: t("Automatic distribution"),
+                          },
+                        ],
+                      },
+                    ]
+                  : []),
                 {
                   name: "contentEdit",
                   label: t("Personal content-editing permission"),

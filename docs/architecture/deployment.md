@@ -1,6 +1,6 @@
 # Production deployment
 
-Aura launched on 2026-10-08. Application revision: `5f7b77002c3745934a74f2323edca7ef50e9e5ca`. [Launch evidence and outstanding work](../../tasks/implementation/AURA-030.md). Proxy configuration additionally includes `c3eb5d3d2f2a6e8f19d6d425cf8e18dbd24b30cb` (verified no-referrer on admin/API). Later documentation commits do not change the deployed images.
+Aura launched on 2026-10-08. Application revision: `35bc0f4bf2ec6c815c6159fae6ec9ec29f4fe69e`. [Launch evidence and outstanding work](../../tasks/implementation/AURA-030.md). Proxy configuration additionally includes `c3eb5d3d2f2a6e8f19d6d425cf8e18dbd24b30cb` (verified no-referrer on admin/API). Later documentation commits do not change the deployed images.
 
 ## Live services and cost
 

@@ -1,0 +1,17 @@
+# AURA-032 — Resend staff invitations and visible deactivation
+
+## Request
+The owner reports a colleague cannot activate, asks for invitation resend and how to deactivate users. Diagnose only the supplied colleague's invitation metadata; do not reveal tokens or passwords. Existing SuperAdmin path is People & leave -> Manage -> Account access -> Deactivated — sessions blocked, with active-lead redistribution. Existing policy remains.
+
+## Plan and acceptance
+Backend specialist owns scoped resend endpoint and safe pending/can-resend metadata with isolated regression tests. UI specialist owns explicit pending status, resend feedback and SuperAdmin-only deactivation confirmation. Root owns integration, independent review and production deployment after AURA-031. Pending active users only can receive new invitation; activated users use self-service password recovery. Existing permanent/acting team authority applies only to their own-team agents. Server enforces scope; UI alone is insufficient. New invitations last48hours, replace old outstanding setup links only on successful delivery, prevent rapid/concurrent resends and preserve prior link on delivery failure. Never return raw tokens except explicitly enabled local development.
+
+Deactivation remains SuperAdmin-only and cannot target the owner. A visible action opens confirmation with existing lead redistribution options. No user is deactivated by this task. All UI strings translated for four languages. Record checks and exact deployed revision below.
+
+## Evidence
+- Implemented POST /api/users/:id/resend-invitation and server-computed invitationPending/canResendInvitation. SuperAdmin can resend eligible staff; permanent/acting team leads can resend only their own-team agents. Activated and inactive accounts are rejected.
+- Shared account locks serialize resend, acceptance and recovery. A successful send replaces prior outstanding setup/recovery links; delivery failure rolls back token changes. One-minute target cooldown and ten attempts per fifteen minutes per actor apply. No password is reset by a manager.
+- Eight new regression tests cover authorization, recipient binding, 48-hour lifetime, token secrecy, delivery rollback, concurrent resends, acceptance/recovery races and throttling. Specialist ran23/23 focused API tests, plus API typecheck. Root ran all workspace typechecks and diff check. Independent reviewer found no material findings or deployment blockers.
+- Local browser verified pending status, resend success, immediate retry cooldown, owner action protection, keyboard Enter opening confirmation, Cancel returning focus, and English/Hebrew RTL confirmation. A requested390px override did not take effect in this browser; actual RTL viewport was765x853, so narrower mobile rendering is not claimed. Temporary local pending-user fixture used a development no-delivery email adapter; no real mail was sent and no real account deactivated.
+- Exact owner-supplied colleague email was not found in either local or production users. A clarification remains pending; do not guess a recipient or create an account. No personal address is stored in this ticket.
+- Production deployment pending. Email-provider success and database commit are not atomic; a rare commit failure after delivery can leave the emailed replacement unusable, with the prior link retained by rollback. An outbox is outside this slice.
