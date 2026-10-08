@@ -60,4 +60,6 @@ At low traffic, use moderated task tests and buyer/agent feedback first. A 2.0% 
 
 ## Weekly review
 
+Use the [pilot decision protocol](pilot-decision-protocol.md) to separate paid demand, delivery quality, contribution and attention. Small cohorts are operating tests; “insufficient evidence” remains a valid review outcome.
+
 Monday: supply/current facts and sales response. Tuesday: source-backed research brief. Wednesday: select two meaningful tests. Thursday: native/factual/rights QA and release decision. Friday: cohort metrics, costs and rejected hypotheses. Every change needs a reason, expected effect, source or explicit assumption, owner, measurement, stop rule and rollback.

@@ -10,6 +10,8 @@ Recommendation: Pini = 'See where your next home could be'; Aura = 'Choose your 
 
 ## Evidence register and limitations
 
+Superseding digital baseline: the [official 2026 update](official-market-update.md) replaces the 2025 ICT figures below for current planning. It also adds independently checked construction and price-index evidence; historical sources retain their original dates and coverage.
+
 1. **Georgia ICT, June 2025 fieldwork, published 2 September 2025.** Geostat reports 92% household internet access; Tbilisi 96.9%, Adjara 94.5%. Among internet users aged 15+ accessing the internet within the preceding three months, 99.5% used a mobile device for wireless access; the category includes laptop/tablet, so this is not a smartphone traffic share. Survey size not shown in release inspected. Implication: mobile testing essential, but actual Pini/Aura device mix needs analytics. Source https://www.geostat.ge/media/72941/Indicators-of-Using-Information-and-Communication-Technologies-(ICT)-in-Households.pdf
 
 2. **Georgia social planning estimates, October 2025, Digital 2026.** Facebook potential ad audience 3.05m; Instagram 1.85m; TikTok 2.57m adults. Georgia internet users 3.12m. Ad planning estimates are not unique active people, cannot be summed, and Facebook adult reach above 100% illustrates denominator/data anomalies. These suggest testing Facebook/Instagram as the distribution base and TikTok as discovery, not predicting buyer numbers. Source https://datareportal.com/reports/digital-2026-georgia

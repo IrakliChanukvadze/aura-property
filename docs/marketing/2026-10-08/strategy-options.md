@@ -33,6 +33,8 @@ Overnight verification: Korter itself already offers free building/cottage proje
 
 ## Common foundation: first seven days
 
+Use the [pilot decision protocol](pilot-decision-protocol.md) to compare paid demand and actual fulfillment after the owner chooses an offer. The [2026 official evidence update](official-market-update.md) supports focused Tbilisi research conditional on authorized inventory; it does not establish a winning channel or exclude Adjara.
+
 1. Confirm the real inquiry recipient for each Pini category and each promoted Aura project. Check representation and media permissions; do not infer a shared referral contract.
 2. Inventory published supply by category and district: unique listings, complete facts, missing covers, stale prices, known update owner. Keep targets separate from observed stock.
 3. Fix or prepare precise tickets for public content defects. The English Pini catalogue currently shows a Georgian project title and `From 52,397` without visible currency; the Boulevard page still exposes `სატესტო`. These were independently observed on 8 October. They matter before decorative redesign.

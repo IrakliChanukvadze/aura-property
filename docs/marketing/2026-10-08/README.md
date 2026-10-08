@@ -8,6 +8,7 @@ Prepared 8 October 2026, Asia/Tbilisi. Research and decision proposals; no campa
 - [Competitive position and viability](competitive-position-and-viability.md): why free is not unique and the contribution/capacity each plan needs.
 - [Research brief and owner decisions](brief.md): authoritative scope and boundaries.
 - [Growth evidence](growth-research.md): market, audience, competitors and economics.
+- [Official 2026 update](official-market-update.md): newer digital access, construction geography and asking-price context with coverage limits.
 - [Website design](design-research.md): live Pini observations and proposed map-first directions; Aura's approved cinematic direction retained.
 - [UGC and production costs](ugc-research.md): footage-preserving repair, voice options, retry costs and content concepts.
 - [Supply density and onboarding](supply-density.md): ten public project/developer research examples and freshness checks; not partners or authorized inventory.
@@ -16,6 +17,7 @@ Prepared 8 October 2026, Asia/Tbilisi. Research and decision proposals; no campa
 - [Execution backlog](execution-backlog.csv): reviewable actions, dependencies, owners and evidence.
 - [Four-week content calendar](content-calendar.md): production ideas and unsent outreach drafts.
 - [Measurement specification](measurement.md): event definitions, source attribution, economics and experiment limits.
+- [Pilot decision protocol](pilot-decision-protocol.md): comparable learning cohorts, acceptance ledger and morning choice sheet.
 - [Change and verification log](change-log.md): what changed, why, and what was verified.
 
 Three research agents contributed. The orchestrator reviewed the reports, checked primary market/vendor sources and independently inspected the public Pini catalogue and Boulevard page. Forecasts and package prices are explicitly hypothetical; no private analytics, signed agency fee contracts or local creator quotations were available.

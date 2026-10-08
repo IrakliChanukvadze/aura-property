@@ -55,3 +55,12 @@ Append dated findings, changed assumptions and verification evidence here. Keep 
 - Recalculated package margins and multilingual software totals; reviewed all specialist reports before integration. No external vendor quotation or audiovisual lip quality test was performed.
 - Integration review updated Plan C's break-even to ten packages/month under the detailed cost model, versus seven under the retained coarse model. Its 220 fulfillment hours exceed the illustrative 100-hour allocation; recorded this mismatch explicitly rather than implying the offer is viable.
 - No push, deployment, publication, outreach, account change or spend. Only research documents changed.
+
+## Overnight pass 2 — 8 October, approximately 04:30
+
+- Confirmed the same research branch and clean tree before edits. No switch or application changes.
+- Requested one bounded specialist update on official Georgian data; independently opened the 2026 ICT, January–June construction and Q2 price-index PDFs. Used their actual publication/fieldwork dates rather than search-engine relative ages. Rewrote the integrated report for readability and precise denominators.
+- Superseded the dated 2025 digital baseline with 2026 evidence while preserving historical figures. Household internet access does not measure property intent; mobile-device usage includes laptops/tablets; construction permits include non-residential and reconstruction work; RPPI covers new Tbilisi dwellings and offer prices, not all Georgia or realized returns.
+- Added comparable pilot cohorts, a paid-demand/accepted-output/cost ledger, an attention test and a morning choice sheet. These are proposals, not authorization to spend, contact customers or implement analytics.
+- Linked the new reports into the strategy, measurement and index documents. Kept Pini categories, free-project policy, undecided house/land pricing and Premium offer, Aura independence and approved cinematic design intact.
+- Verified relative document links and whitespace; no app tests needed for documentation-only changes. No campaign outcomes, customer prices or conversion benchmarks were invented. No push, merge, deployment, publication, outreach, upload, generation, account change or spend.
