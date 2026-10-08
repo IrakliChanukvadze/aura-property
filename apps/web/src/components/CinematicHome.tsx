@@ -116,10 +116,17 @@ export function CinematicHome({
             ))}
           </h1>
           <p className={styles.heroDescription}>{heroDescription}</p>
-          <a className={styles.heroCta} href="#collection">
-            <span>{c.exploreCollection}</span>
-            <ArrowRight size={20} strokeWidth={1.3} />
-          </a>
+          <p className={styles.agencyRole}>{c.agencyRole}</p>
+          <div className={styles.heroActions}>
+            <a className={styles.heroCta} href="#collection">
+              <span>{c.exploreCollection}</span>
+              <ArrowRight size={20} strokeWidth={1.3} aria-hidden="true" />
+            </a>
+            <Link href={`/${locale}/contact`} className={styles.heroAdvisor}>
+              {c.speakToTeam}
+              <ArrowUpRight size={18} strokeWidth={1.3} aria-hidden="true" />
+            </Link>
+          </div>
         </div>
         <div className={styles.heroBottom}>
           <a
@@ -151,6 +158,9 @@ export function CinematicHome({
             {c.collectionSubline}
           </p>
         </div>
+        {collection.length > 0 && (
+          <p className={styles.collectionGuide}>{c.projectGuide}</p>
+        )}
         {collection.some((p) => p.demo) && (
           <p className={styles.notice}>{d.demo}</p>
         )}
@@ -230,12 +240,13 @@ export function CinematicHome({
                 <ArrowUpRight size={28} strokeWidth={1} />
               </Link>
             ))}
-            <Link
-              href={`/${locale}/projects`}
-              className={styles.underlinedLink}
-            >
-              {d.viewAll}
-              <ArrowRight size={19} />
+          </div>
+        )}
+        {collection.length > 0 && (
+          <div className={styles.collectionBrowse}>
+            <Link href={`/${locale}/projects`} className={styles.underlinedLink}>
+              {c.browseProjects}
+              <ArrowRight size={19} aria-hidden="true" />
             </Link>
           </div>
         )}
@@ -280,6 +291,9 @@ export function CinematicHome({
           <span />
           {c.approach}
         </h2>
+        <p className={styles.processIntro} data-reveal>
+          {c.processIntro}
+        </p>
         <div className={styles.servicesGrid}>
           {[
             [d.service1, d.service1Body],
@@ -290,6 +304,23 @@ export function CinematicHome({
               <span>0{index + 1}</span>
               <h3>{heading}</h3>
               <p>{body}</p>
+              <Link
+                href={
+                  index === 2
+                    ? `/${locale}/contact`
+                    : index === 1 && featured
+                      ? `/${locale}/projects/${featured.slug}`
+                      : `/${locale}/projects`
+                }
+                className={styles.processLink}
+              >
+                {index === 2
+                  ? c.speakToTeam
+                  : index === 1 && featured
+                    ? c.exploreDetails
+                    : c.browseProjects}
+                <ArrowRight size={17} aria-hidden="true" />
+              </Link>
             </article>
           ))}
         </div>

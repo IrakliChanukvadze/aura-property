@@ -117,6 +117,81 @@
   margin-top: 17px;
   animation: textEntrance 1.1s 0.48s both;
 }
+.agencyRole {
+  max-width: 710px;
+  margin-top: 12px;
+  color: #f4f2e7;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.heroActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 28px;
+  margin-top: 24px;
+}
+.heroActions .heroCta {
+  margin-top: 0;
+}
+.heroAdvisor {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 44px;
+  padding-block: 10px;
+  border-bottom: 1px solid #f4edcf85;
+  font-size: 13px;
+  color: #f8f6eb;
+}
+.heroAdvisor svg,
+.processLink svg {
+  flex-shrink: 0;
+}
+.heroActions a:focus-visible {
+  outline: 2px solid #f8f6eb;
+  outline-offset: 5px;
+}
+.collectionGuide {
+  margin: 0 2.8% 24px;
+  color: var(--cinema-muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.collectionBrowse {
+  margin-inline: 2.8%;
+  padding-bottom: 32px;
+}
+.collectionBrowse .underlinedLink {
+  margin-top: 0;
+  min-height: 44px;
+  align-items: center;
+}
+.processIntro {
+  margin-top: 20px;
+  max-width: 660px;
+  color: var(--cinema-muted);
+  font-size: 14px;
+  line-height: 1.7;
+}
+.processLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  gap: 14px;
+  margin-top: 12px;
+  border-bottom: 1px solid var(--cinema-gold);
+  font-size: 13px;
+  color: var(--cinema-ink);
+}
+.processLink:focus-visible,
+.collectionBrowse a:focus-visible {
+  outline: 2px solid var(--cinema-gold);
+  outline-offset: 5px;
+}
+:global([dir="rtl"]) .processLink svg {
+  rotate: 180deg;
+}
 .heroCta,
 .projectCta {
   display: inline-flex;
@@ -736,9 +811,9 @@
 }
 @media (max-width: 680px) {
   .hero {
-    height: 94svh;
-    min-height: 660px;
-    max-height: 900px;
+    height: auto;
+    min-height: 94svh;
+    max-height: none;
   }
   .heroMedia {
     inset: -3% -18%;
@@ -752,7 +827,7 @@
       linear-gradient(0deg, #081b12b3, transparent 65%);
   }
   .heroContent {
-    padding: 185px 7% 150px;
+    padding: 185px 7% 120px;
   }
   .heroEyebrow {
     font-size: 8px;
@@ -771,6 +846,18 @@
     font-size: 16px;
     margin-top: 23px;
     max-width: 300px;
+  }
+  .agencyRole {
+    font-size: 13px;
+    max-width: 340px;
+  }
+  .heroActions {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .collectionGuide {
+    margin-inline: 10px;
   }
   .heroCta {
     min-width: 220px;
@@ -982,7 +1069,7 @@
 }
 @media (max-height: 710px) and (min-width: 681px) {
   .hero {
-    min-height: 620px;
+    min-height: 720px;
   }
   .heroContent {
     padding-top: 156px;
