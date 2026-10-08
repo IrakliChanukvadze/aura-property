@@ -32,7 +32,7 @@ Start with `AGENTS.md`, `docs/product/mvp-spec.md` and `docs/product/acceptance.
 
 ## Verification
 
-AURA-028 (2026-10-08): Pini-compatible OpenRouter translation with batched editor requests and Hebrew support; 65 API tests pass against the isolated local database, all workspace typechecks and API/admin builds pass. Browser error-path check confirms unsaved source text is preserved. Real-provider translation quality remains pending the key; the shared OpenRouter $10/month cap has been applied and verified. See `tasks/implementation/AURA-028.md`.
+AURA-028 (2026-10-08): Pini-compatible OpenRouter translation with batched editor requests and Hebrew support; 65 API tests pass against the isolated local database, all workspace typechecks and API/admin builds pass. Browser error-path check confirms unsaved source text is preserved. The supplied OpenRouter key and $10/month shared cap are verified; one live four-language adapter check passed. Editorial translation review remains required. See `tasks/implementation/AURA-028.md`.
 
 AURA-026 (2026-10-08): 50 API tests pass against an isolated local database; API/admin/web type checks and API/admin builds pass. The website editor was checked at desktop/mobile widths, in dark mode, and with Hebrew content direction. Real translation-provider quality remains unverified until credentials are connected. See `tasks/implementation/AURA-026.md` for evidence and limits.
 
