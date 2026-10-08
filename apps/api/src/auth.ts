@@ -36,6 +36,8 @@ export async function authenticate(req: any) {
   )
     throw new ApiError(403, "FORBIDDEN", "Editor role has no CRM access");
 }
+const usedTokenMessage =
+  "This link has already been used. Sign in with your password, or use Forgot password to reset it.";
 const safe = (u: any) => ({
   id: u.id,
   name: u.name,
@@ -143,8 +145,19 @@ export async function authRoutes(app: FastifyInstance) {
       .parse(req.body);
     await db.$transaction(async (tx) => {
       const t = await tx.token.findUnique({ where: { hash: digest(b.token) } });
-      if (!t || t.usedAt || t.expiresAt < new Date())
-        throw new ApiError(400, "INVALID_TOKEN", "Expired or used token");
+      if (!t)
+        throw new ApiError(
+          400,
+          "INVALID_TOKEN",
+          "This link is invalid. Open the complete link from your email, or use Forgot password to request a new one.",
+        );
+      if (t.usedAt) throw new ApiError(400, "INVALID_TOKEN", usedTokenMessage);
+      if (t.expiresAt < new Date())
+        throw new ApiError(
+          400,
+          "INVALID_TOKEN",
+          "This link has expired. Use Forgot password to request a new link.",
+        );
       const u = await tx.user.findUnique({ where: { id: t.userId } });
       if (!u?.active)
         throw new ApiError(400, "INVALID_TOKEN", "Account unavailable");
@@ -153,7 +166,7 @@ export async function authRoutes(app: FastifyInstance) {
         data: { usedAt: new Date() },
       });
       if (!claimed.count)
-        throw new ApiError(400, "INVALID_TOKEN", "Token already used");
+        throw new ApiError(400, "INVALID_TOKEN", usedTokenMessage);
       await tx.user.update({
         where: { id: u.id },
         data: {

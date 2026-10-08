@@ -666,6 +666,7 @@ select optgroup {
   height: 100%;
 }
 .unit-polygon {
+  outline: none;
   stroke-width: 0.4;
   transition:
     fill 0.22s,
@@ -677,9 +678,13 @@ select optgroup {
   cursor: pointer;
 }
 .unit-polygon.available:hover,
-.unit-polygon.available:focus {
+.unit-polygon.available:focus-visible {
   fill: #758c5480;
   stroke: #43552e;
+}
+.unit-polygon.available:focus-visible {
+  outline: none;
+  stroke-width: 0.9;
 }
 .unit-polygon.reserved {
   fill: #c4a55c55;
@@ -746,6 +751,9 @@ select optgroup {
   opacity: 0.55;
 }
 .unit-dialog {
+  position: fixed;
+  inset: 0;
+  margin: auto;
   background: var(--bg);
   color: var(--text);
   border: 0;

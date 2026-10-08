@@ -73,7 +73,10 @@ export default function App() {
     [menu, setMenu] = useState(false),
     [error, setError] = useState(""),
     [recovery, setRecovery] = useState(false),
-    [authMessage, setAuthMessage] = useState("");
+    [authMessage, setAuthMessage] = useState(""),
+    [token, setToken] = useState(() =>
+      new URLSearchParams(location.search).get("token"),
+    );
   const refresh = useCallback(
     () =>
       api("/auth/me")
@@ -121,7 +124,6 @@ export default function App() {
       setError((e as Error).message);
     }
   };
-  const token = new URLSearchParams(location.search).get("token");
   if (loading)
     return (
       <div className="loading">
@@ -151,6 +153,7 @@ export default function App() {
           </h2>
           {authMessage && <p role="status">{authMessage}</p>}
           <Form
+            key={token ? "setup" : recovery ? "recovery" : "login"}
             fields={
               recovery
                 ? [
@@ -206,6 +209,7 @@ export default function App() {
               );
               if (token) {
                 history.replaceState(null, "", location.pathname);
+                setToken(null);
                 setAuthMessage("Password set. Sign in with your account.");
               }
               await refresh();
@@ -218,16 +222,18 @@ export default function App() {
                   : t("Sign in")
             }
           />
-          {!token && (
-            <button
-              onClick={() => {
-                setRecovery(!recovery);
-                setAuthMessage("");
-              }}
-            >
-              {recovery ? t("Back to sign in") : t("Forgot password?")}
-            </button>
-          )}
+          <button
+            onClick={() => {
+              if (token) {
+                history.replaceState(null, "", location.pathname);
+                setToken(null);
+                setRecovery(false);
+              } else setRecovery(!recovery);
+              setAuthMessage("");
+            }}
+          >
+            {token || recovery ? t("Back to sign in") : t("Forgot password?")}
+          </button>
           <p className="muted">
             {t(
               "Access is invitation-only. Contact your team lead for an account.",
