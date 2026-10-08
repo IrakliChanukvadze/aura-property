@@ -20,6 +20,44 @@ const body = z.object({
   requestId: z.string().optional(),
   otpCode: z.string().optional(),
 });
+// The local OTP adapter is valid only outside production with explicit opt-in.
+function optionalVerificationAvailable() {
+  return Boolean(process.env.SMS_WEBHOOK_URL?.trim()) || isDevelopment;
+}
+
+async function requestPhoneVerification(
+  normalized: string,
+  payload: z.infer<typeof body> | { verificationLeadId: string },
+  alreadySaved = false,
+) {
+  const code = makeOtp();
+  const pending = await db.inquiryPending.create({
+    data: {
+      phone: normalized,
+      payload,
+      otpHash: digest(code),
+      expiresAt: new Date(Date.now() + 600000),
+    },
+  });
+  try {
+    const delivery = await sendOtp(normalized, code);
+    return {
+      requestId: pending.id,
+      ...(isDevelopment ? { developmentOtp: delivery } : {}),
+    };
+  } catch {
+    // An unsent code must never remain available for later verification.
+    await db.inquiryPending.deleteMany({ where: { id: pending.id } });
+    throw new ApiError(
+      503,
+      "SMS_UNAVAILABLE",
+      alreadySaved
+        ? "Phone verification is temporarily unavailable. Your inquiry is already saved. Please contact our team if you need help."
+        : "Phone verification is temporarily unavailable. Your new request has not been submitted. Please contact our team.",
+    );
+  }
+}
+
 export async function inquiryRoutes(app: FastifyInstance) {
   app.post(
     "/api/public/inquiries",
@@ -84,21 +122,10 @@ export async function inquiryRoutes(app: FastifyInstance) {
       });
       if (existing) {
         if (!b.requestId || !b.otpCode) {
-          const code = makeOtp();
-          const pending = await db.inquiryPending.create({
-            data: {
-              phone: normalized,
-              payload: b,
-              otpHash: digest(code),
-              expiresAt: new Date(Date.now() + 600000),
-            },
-          });
-          const delivery = await sendOtp(normalized, code);
           return {
             data: {
               requiresOtp: true,
-              requestId: pending.id,
-              ...(isDevelopment ? { developmentOtp: delivery } : {}),
+              ...(await requestPhoneVerification(normalized, b)),
             },
           };
         }
@@ -218,25 +245,22 @@ export async function inquiryRoutes(app: FastifyInstance) {
         { isolationLevel: "ReadCommitted" },
       );
       if ("needsVerification" in lead) {
-        const code = makeOtp();
-        const pending = await db.inquiryPending.create({
-          data: {
-            phone: normalized,
-            payload: b,
-            otpHash: digest(code),
-            expiresAt: new Date(Date.now() + 600000),
-          },
-        });
-        const delivery = await sendOtp(normalized, code);
         return {
           data: {
             requiresOtp: true,
-            requestId: pending.id,
-            ...(isDevelopment ? { developmentOtp: delivery } : {}),
+            ...(await requestPhoneVerification(normalized, b)),
           },
         };
       }
-      return { data: { id: lead.id, accepted: true, requiresOtp: false } };
+      return {
+        data: {
+          id: lead.id,
+          accepted: true,
+          requiresOtp: false,
+          optionalVerificationAvailable:
+            !existing && optionalVerificationAvailable(),
+        },
+      };
     },
   );
   app.post(
@@ -254,21 +278,12 @@ export async function inquiryRoutes(app: FastifyInstance) {
         include: { customer: true },
       });
       if (!l) throw new ApiError(404, "NOT_FOUND", "Inquiry not found");
-      const code = makeOtp();
-      const p = await db.inquiryPending.create({
-        data: {
-          phone: normalized,
-          payload: { verificationLeadId: l.id },
-          otpHash: digest(code),
-          expiresAt: new Date(Date.now() + 600000),
-        },
-      });
-      const delivery = await sendOtp(normalized, code);
       return {
-        data: {
-          requestId: p.id,
-          ...(isDevelopment ? { developmentOtp: delivery } : {}),
-        },
+        data: await requestPhoneVerification(
+          normalized,
+          { verificationLeadId: l.id },
+          true,
+        ),
       };
     },
   );

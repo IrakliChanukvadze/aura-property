@@ -1,0 +1,166 @@
+name: aura-production
+
+x-service: &service
+  restart: unless-stopped
+  init: true
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+  security_opt:
+    - no-new-privileges:true
+
+services:
+  postgres:
+    <<: *service
+    image: ${POSTGRES_IMAGE:-postgres:17-alpine}
+    environment:
+      POSTGRES_DB: aura
+      POSTGRES_USER: aura
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set a unique URL-safe database password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks: [database]
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U aura -d aura']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    mem_limit: 512m
+    shm_size: 256mb
+
+  migrate:
+    image: ${IMAGE_PREFIX:-aura-property}-migrate:${RELEASE_TAG:?Set an immutable release tag}
+    profiles: [operations]
+    environment:
+      DATABASE_URL: postgresql://aura:${POSTGRES_PASSWORD:?Set database password}@postgres:5432/aura?schema=public&connection_limit=8
+      NODE_ENV: production
+      DEV_INTEGRATIONS: "false"
+    networks: [edge, database]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    security_opt: [no-new-privileges:true]
+
+  api:
+    <<: *service
+    image: ${IMAGE_PREFIX:-aura-property}-api:${RELEASE_TAG:?Set an immutable release tag}
+    environment:
+      NODE_ENV: production
+      DEV_INTEGRATIONS: "false"
+      HOST: 0.0.0.0
+      PORT: "4000"
+      DATABASE_URL: postgresql://aura:${POSTGRES_PASSWORD:?Set database password}@postgres:5432/aura?schema=public&connection_limit=8
+      ADMIN_URL: https://admin.auraproperty.ge
+      ALLOWED_ORIGINS: https://auraproperty.ge,https://www.auraproperty.ge,https://admin.auraproperty.ge
+      TRUST_PROXY: 172.30.80.2
+      INTERNAL_CONTENT_READER: 172.30.80.3
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      CHAT_MODEL: ${CHAT_MODEL:-google/gemini-2.5-flash}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_TRANSLATION_MODEL: ${OPENAI_TRANSLATION_MODEL:-gpt-4.1-mini}
+      TRANSLATION_WEBHOOK_URL: ${TRANSLATION_WEBHOOK_URL:-}
+      TRANSLATION_WEBHOOK_TOKEN: ${TRANSLATION_WEBHOOK_TOKEN:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      EMAIL_FROM: ${EMAIL_FROM:-}
+      EMAIL_WEBHOOK_URL: ${EMAIL_WEBHOOK_URL:-}
+      EMAIL_WEBHOOK_TOKEN: ${EMAIL_WEBHOOK_TOKEN:-}
+      SMS_WEBHOOK_URL: ${SMS_WEBHOOK_URL:-}
+      SMS_WEBHOOK_TOKEN: ${SMS_WEBHOOK_TOKEN:-}
+      FX_WEBHOOK_URL: ${FX_WEBHOOK_URL:-}
+      R2_ACCOUNT_ID: ${R2_ACCOUNT_ID:-}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:-}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:-}
+      R2_BUCKET: ${R2_BUCKET:-}
+    networks:
+      edge:
+        ipv4_address: 172.30.80.4
+      database: {}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, node, -e, 'fetch("http://127.0.0.1:4000/api/health").then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))']
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+    mem_limit: 512m
+    stop_grace_period: 30s
+
+  web:
+    <<: *service
+    image: ${IMAGE_PREFIX:-aura-property}-web:${RELEASE_TAG:?Set an immutable release tag}
+    environment:
+      NODE_ENV: production
+      HOSTNAME: 0.0.0.0
+      PORT: "3000"
+      NEXT_TELEMETRY_DISABLED: "1"
+      INTERNAL_API_URL: http://api:4000/api
+    networks:
+      edge:
+        ipv4_address: 172.30.80.3
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, node, -e, 'fetch("http://127.0.0.1:3000/",{redirect:"manual"}).then(r=>{if(r.status>=400)process.exit(1)}).catch(()=>process.exit(1))']
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+    mem_limit: 512m
+    stop_grace_period: 30s
+
+  admin:
+    <<: *service
+    image: ${IMAGE_PREFIX:-aura-property}-admin:${RELEASE_TAG:?Set an immutable release tag}
+    networks:
+      edge:
+        ipv4_address: 172.30.80.5
+    healthcheck:
+      test: [CMD, wget, -q, --spider, http://127.0.0.1/]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    mem_limit: 128m
+
+  caddy:
+    <<: *service
+    image: ${CADDY_IMAGE:-caddy:2-alpine}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      edge:
+        ipv4_address: 172.30.80.2
+    depends_on:
+      api:
+        condition: service_healthy
+      web:
+        condition: service_healthy
+      admin:
+        condition: service_healthy
+    mem_limit: 128m
+
+networks:
+  edge:
+    ipam:
+      config:
+        - subnet: 172.30.80.0/24
+  database:
+    internal: true
+    ipam:
+      config:
+        - subnet: 172.30.81.0/24
+
+volumes:
+  postgres_data:
+  caddy_data:
+  caddy_config:

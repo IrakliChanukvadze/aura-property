@@ -1,0 +1,65 @@
+{
+	# Trust forwarding headers only when the TCP peer is Cloudflare. Ranges checked
+	# 2026-10-08 against https://www.cloudflare.com/ips-v4/ and /ips-v6/.
+	servers {
+		trusted_proxies static 173.245.48.0/20 103.21.244.0/22 103.22.200.0/22 103.31.4.0/22 141.101.64.0/18 108.162.192.0/18 190.93.240.0/20 188.114.96.0/20 197.234.240.0/22 198.41.128.0/17 162.158.0.0/15 104.16.0.0/13 104.24.0.0/14 172.64.0.0/13 131.0.72.0/22 2400:cb00::/32 2606:4700::/32 2803:f800::/32 2405:b500::/32 2405:8100::/32 2a06:98c0::/29 2c0f:f248::/32
+		trusted_proxies_strict
+		client_ip_headers CF-Connecting-IP
+	}
+}
+
+(common) {
+	encode zstd gzip
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+	# No access logs: invitation URLs and CRM query data must not enter proxy logs.
+}
+
+www.auraproperty.ge {
+	import common
+	redir https://auraproperty.ge{uri} permanent
+}
+
+auraproperty.ge {
+	import common
+	reverse_proxy web:3000 {
+		header_up X-Forwarded-For {client_ip}
+		header_up -CF-Connecting-IP
+	}
+}
+
+admin.auraproperty.ge {
+	import common
+	header {
+		defer
+		Cache-Control "no-store"
+		X-Robots-Tag "noindex, nofollow"
+		Referrer-Policy no-referrer
+	}
+	reverse_proxy admin:80
+}
+
+api.auraproperty.ge {
+	import common
+	header {
+		defer
+		Cache-Control "no-store"
+		X-Robots-Tag "noindex, nofollow"
+		Referrer-Policy no-referrer
+	}
+	@api path /api /api/*
+	handle @api {
+		reverse_proxy api:4000 {
+			# Replace, do not append the visitor-supplied forwarded header chain.
+			# The API trusts only this container's fixed 172.30.80.2 address.
+			header_up X-Forwarded-For {client_ip}
+			header_up -CF-Connecting-IP
+		}
+	}
+	handle {
+		respond 404
+	}
+}

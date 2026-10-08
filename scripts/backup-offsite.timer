@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily Aura encrypted backup at 04:30 Georgia time
+
+[Timer]
+OnCalendar=*-*-* 00:30:00 UTC
+RandomizedDelaySec=5m
+Persistent=true
+Unit=aura-backup-offsite.service
+
+[Install]
+WantedBy=timers.target

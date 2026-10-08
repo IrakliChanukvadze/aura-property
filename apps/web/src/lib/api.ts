@@ -146,7 +146,8 @@ export const demoProjects: Project[] = [
 }));
 async function get<T>(path: string, fallback: T): Promise<T> {
   try {
-    const response = await fetch(`${apiBase}/public/${path}`, {
+    const serverApiBase = process.env.INTERNAL_API_URL || apiBase;
+    const response = await fetch(`${serverApiBase}/public/${path}`, {
       cache: "no-store",
       signal: AbortSignal.timeout(5000),
     });

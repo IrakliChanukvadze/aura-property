@@ -50,12 +50,22 @@ function reviewed(t: any, bodyKey: string) {
 export function publicProject(p: any, usdGel?: number) {
   const units = p.units ?? [];
   const publishedUnits = units.map(
-    ({ minimumPrice, minimumCurrency, ...u }: any) => ({
-      ...u,
-      showPrice: u.showPrice && p.showPrices !== false,
-      price: u.showPrice && p.showPrices !== false ? Number(u.price) : null,
-      area: Number(u.area),
-    }),
+    ({ minimumPrice, minimumCurrency, ...u }: any) => {
+      let details = u.details;
+      if (details && typeof details === "object" && !Array.isArray(details)) {
+        // Imported prices are provenance, not a second public price field.
+        // They can be stale and must never bypass project/unit visibility.
+        const { price: _sourcePrice, ...publicDetails } = details;
+        details = publicDetails;
+      }
+      return {
+        ...u,
+        details,
+        showPrice: u.showPrice && p.showPrices !== false,
+        price: u.showPrice && p.showPrices !== false ? Number(u.price) : null,
+        area: Number(u.area),
+      };
+    },
   );
   const buildings = (p.buildings as any[]).map((b) => ({
     ...b,

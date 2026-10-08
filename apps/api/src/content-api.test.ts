@@ -238,6 +238,76 @@ test("project edits validate explorer structure and unit parents before publishi
   );
 });
 
+test("public catalog hides imported source prices and respects project and unit price visibility", async () => {
+  const sourcePrice = 135000;
+  const currentPrice = 125000;
+  const project = await db.project.create({
+    data: {
+      slug: `${prefix}-price-privacy`,
+      city: "Tbilisi",
+      coverImage: "cover.jpg",
+      translations: translations("description"),
+      buildings,
+      published: true,
+      showPrices: true,
+      units: {
+        create: [true, false].map((showPrice, i) => ({
+          buildingId: "building",
+          floorId: "floor",
+          number: String(101 + i),
+          area: 50,
+          bedrooms: 1,
+          polygon,
+          price: currentPrice,
+          minimumPrice: 100000,
+          minimumCurrency: "USD",
+          showPrice,
+          details: {
+            price: sourcePrice,
+            photos: ["apartment.jpg"],
+            areaKnown: true,
+          },
+        })),
+      },
+    },
+  });
+  projectIds.push(project.id);
+  for (const projectPricesVisible of [true, false]) {
+    await db.project.update({
+      where: { id: project.id },
+      data: { showPrices: projectPricesVisible },
+    });
+    for (const url of [
+      `/api/public/projects/${project.slug}`,
+      "/api/public/projects",
+    ]) {
+      const response = await app.inject({ url });
+      assert.equal(response.statusCode, 200, response.body);
+      const data = response.json().data;
+      const publicProject = Array.isArray(data)
+        ? data.find((p: { id: string }) => p.id === project.id)
+        : data;
+      const units = publicProject.buildings[0].floors[0].units;
+      assert.equal(units.length, 2);
+      for (const unit of units) {
+        const visible = projectPricesVisible && unit.number === "101";
+        assert.equal(unit.showPrice, visible);
+        assert.equal(unit.price, visible ? currentPrice : null);
+        assert.equal(Object.hasOwn(unit.details, "price"), false);
+        assert.equal(Object.hasOwn(unit, "minimumPrice"), false);
+        assert.equal(Object.hasOwn(unit, "minimumCurrency"), false);
+        assert.deepEqual(unit.details.photos, ["apartment.jpg"]);
+        assert.equal(unit.details.areaKnown, true);
+      }
+    }
+  }
+  const stored = await db.unit.findMany({ where: { projectId: project.id } });
+  assert.ok(
+    stored.every((unit) => (unit.details as { price: number }).price === sourcePrice),
+    "Public serialization must preserve the stored import provenance",
+  );
+});
+
 test("articles enforce reviewed translations and draft visibility", async () => {
   const editor = await account("EDITOR", true);
   assert.equal(

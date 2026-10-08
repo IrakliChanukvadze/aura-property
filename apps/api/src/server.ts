@@ -1,4 +1,5 @@
 import Fastify from "fastify";
+import { contentReadAllowList, trustedProxyAddresses } from "./proxy.js";
 import cookie from "@fastify/cookie";
 import cors from "@fastify/cors";
 import rateLimit from "@fastify/rate-limit";
@@ -15,7 +16,11 @@ import { mediaRoutes } from "./media.js";
 import { settingsRoutes } from "./settings.js";
 import { runJobs } from "./jobs.js";
 export async function buildApp() {
-  const app = Fastify({ logger: true, bodyLimit: 5242880 });
+  const app = Fastify({
+    logger: true,
+    bodyLimit: 5242880,
+    trustProxy: trustedProxyAddresses(process.env.TRUST_PROXY),
+  });
   const allowedOrigins = (
     process.env.ALLOWED_ORIGINS ??
     "http://localhost:3000,http://localhost:3100,http://localhost:5173"
@@ -29,7 +34,11 @@ export async function buildApp() {
     methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     credentials: true,
   });
-  await app.register(rateLimit, { max: 200, timeWindow: "1 minute" });
+  await app.register(rateLimit, {
+    max: 200,
+    timeWindow: "1 minute",
+    allowList: contentReadAllowList(process.env.INTERNAL_CONTENT_READER),
+  });
   app.addHook("onRequest", async (req, reply) => {
     reply.header("x-content-type-options", "nosniff");
     reply.header("x-robots-tag", "noindex, nofollow");

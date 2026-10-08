@@ -23,6 +23,7 @@ export function InquiryForm({
   const [success, setSuccess] = useState(false);
   const [otp, setOtp] = useState(false);
   const [optional, setOptional] = useState(false);
+  const [optionalAvailable, setOptionalAvailable] = useState(false);
   const [payload, setPayload] = useState<Record<string, unknown> | null>(null);
   const [code, setCode] = useState("");
   const [leadId, setLeadId] = useState("");
@@ -48,8 +49,15 @@ export function InquiryForm({
       body: JSON.stringify(data),
     });
     const result = await response.json();
-    if (!response.ok)
+    if (!response.ok) {
+      if (result.error?.code === "SMS_UNAVAILABLE")
+        throw new Error(
+          path === "inquiries"
+            ? d.duplicateOtpUnavailable
+            : d.optionalOtpUnavailable,
+        );
       throw new Error(result.error?.message || result.message || d.error);
+    }
     return result.data;
   }
   async function send(data: Record<string, unknown>) {
@@ -66,6 +74,7 @@ export function InquiryForm({
         );
       } else {
         setSuccess(true);
+        setOptionalAvailable(result.optionalVerificationAvailable === true);
         setOtp(false);
         setLeadId(result.id);
         setPhone(String(data.phone || ""));
@@ -155,7 +164,7 @@ export function InquiryForm({
         <div className="form-success" role="status">
           <Check />
           <h3>{d.success}</h3>
-          {!verified && (
+          {!verified && optionalAvailable && (
             <>
               <p>{d.optionalOtp}</p>
               <button

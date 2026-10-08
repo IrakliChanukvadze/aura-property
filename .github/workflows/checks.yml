@@ -9,11 +9,11 @@ jobs:
         env:
           POSTGRES_USER: aura
           POSTGRES_PASSWORD: aura_ci_only
-          POSTGRES_DB: aura
+          POSTGRES_DB: aura_endpoint_audit
         ports: ["5432:5432"]
         options: --health-cmd "pg_isready -U aura" --health-interval 5s --health-timeout 3s --health-retries 10
     env:
-      DATABASE_URL: postgresql://aura:aura_ci_only@localhost:5432/aura?schema=public
+      DATABASE_URL: postgresql://aura:aura_ci_only@localhost:5432/aura_endpoint_audit?schema=public
       NODE_ENV: test
       DEV_INTEGRATIONS: "true"
     steps:
@@ -27,5 +27,8 @@ jobs:
       - run: npm run deploy -w @aura/database
       - run: npm run typecheck
       - run: npm test
+      - run: node --test scripts/public-content.test.mjs scripts/backup-offsite.test.mjs
       - run: npm run build
+        env:
+          NODE_ENV: production
       - run: npm audit --audit-level=high

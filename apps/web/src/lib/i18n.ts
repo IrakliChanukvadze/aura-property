@@ -111,6 +111,10 @@ const en = {
     "Your inquiry is saved. You can verify your phone now, or do this later.",
   duplicateOtp:
     "An inquiry already exists with this number. Verify your phone to send another inquiry.",
+  duplicateOtpUnavailable:
+    "Phone verification is temporarily unavailable. Your new request has not been submitted. Please contact our team.",
+  optionalOtpUnavailable:
+    "Phone verification is temporarily unavailable. Your inquiry is already saved. Please contact our team if you need help.",
   code: "Verification code",
   verify: "Verify phone",
   skip: "Do this later",
@@ -312,6 +316,10 @@ Object.assign(ka, {
   aboutIntro:
     "Aura წარმოადგენს საცხოვრებელ კომპლექსებს საქართველოში. ჩვენ გეხმარებით უძრავი ქონების არჩევაში.",
   duplicateOtp: "ამ ნომრით მოთხოვნა უკვე არსებობს. დაადასტურეთ ნომერი.",
+  duplicateOtpUnavailable:
+    "ტელეფონის ნომრის დადასტურება დროებით მიუწვდომელია. თქვენი ახალი მოთხოვნა არ გაგზავნილა. გთხოვთ, დაუკავშირდეთ ჩვენს გუნდს.",
+  optionalOtpUnavailable:
+    "ტელეფონის ნომრის დადასტურება დროებით მიუწვდომელია. თქვენი მოთხოვნა უკვე შენახულია. დახმარებისთვის დაუკავშირდით ჩვენს გუნდს.",
   code: "დადასტურების კოდი",
   verify: "ნომრის დადასტურება",
   skip: "მოგვიანებით",
@@ -334,6 +342,10 @@ Object.assign(ru, {
   aboutIntro:
     "Aura представляет жилые комплексы Грузии. Мы помогаем разобраться в выборе недвижимости.",
   duplicateOtp: "Запрос с этим номером уже существует. Подтвердите телефон.",
+  duplicateOtpUnavailable:
+    "Подтверждение телефона временно недоступно. Ваш новый запрос не отправлен. Пожалуйста, свяжитесь с нашей командой.",
+  optionalOtpUnavailable:
+    "Подтверждение телефона временно недоступно. Ваш запрос уже сохранён. Если нужна помощь, свяжитесь с нашей командой.",
   code: "Код подтверждения",
   verify: "Подтвердить телефон",
   skip: "Позже",
@@ -356,6 +368,10 @@ Object.assign(he, {
   aboutIntro:
     "Aura מייצגת מתחמי מגורים בגאורגיה. אנו עוזרים לכם לבחור נכס בקשר אישי.",
   duplicateOtp: "קיימת פנייה עם המספר הזה. אמתו את הטלפון.",
+  duplicateOtpUnavailable:
+    "אימות הטלפון אינו זמין כרגע. הבקשה החדשה שלכם לא נשלחה. אנא צרו קשר עם הצוות שלנו.",
+  optionalOtpUnavailable:
+    "אימות הטלפון אינו זמין כרגע. הפנייה שלכם כבר נשמרה. אם אתם זקוקים לעזרה, צרו קשר עם הצוות שלנו.",
   code: "קוד אימות",
   verify: "אימות טלפון",
   skip: "מאוחר יותר",

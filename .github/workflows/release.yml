@@ -1,0 +1,29 @@
+name: Build Aura release images
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: aura-release-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  build:
+    # Native amd64 avoids Go/esbuild and Next.js failures under Mac x86 emulation.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build immutable production images
+        run: bash scripts/deploy-build.sh
+      - name: Upload deployment artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: aura-release-${{ github.sha }}
+          path: |
+            .local/releases/${{ github.sha }}/images.tar.gz
+            .local/releases/${{ github.sha }}/images.tar.gz.sha256
+            .local/releases/${{ github.sha }}/release.env
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
