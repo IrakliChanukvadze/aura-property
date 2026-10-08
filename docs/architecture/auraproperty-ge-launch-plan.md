@@ -108,3 +108,7 @@ Cloudflare Free zone და Resend-ის სამი DNS ჩანაწერ
 
 ### Nameserver-ების შენახვა — 2026-10-08
 მფლობელმა Domenebi-ზე Cloudflare nameserver-ები შეინახა. Cloudflare და Resend ამოწმებენ DNS-ს; `.ge` რეესტრის ჩანაწერების განახლება ჯერ მოლოდინშია. Cloudflare-ზე email ჩანაწერები უშუალო DNS მოთხოვნით სწორად დასტურდება. Resend key ჯერ ცარიელია; ნებადართული სატესტო email არ გაგზავნილა. ვებსაიტის სერვერზე გაშვება კვლავ ცალკე დარჩენილ ნაბიჯად რჩება.
+
+
+### Email verification completed - 2026-10-08
+Cloudflare delegation is visible at the .ge registry and public DNS. Resend verifies Aura's domain and all three records. The shared key supplied by the owner passed an authenticated check; the test to the owner-corrected address reached Delivered status. The initial mistyped address bounced as Recipient not found and was not retried. Secrets remain in the ignored private production env. Website deployment, origin TLS and production runtime configuration remain pending. See AURA-029 for evidence.
