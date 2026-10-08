@@ -1,7 +1,24 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
+import type { Prisma } from "@prisma/client";
 import { db, requireAdmin, content } from "./db.js";
 import { authenticate } from "./auth.js";
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+// Store only overrides. Removing a key lets the website's localized default apply.
+function mergeSiteContent(existing: unknown, patch: Record<string, unknown>) {
+  const merged = new Map(Object.entries(isObject(existing) ? existing : {}));
+  for (const [key, value] of Object.entries(patch)) {
+    if (value === "") merged.delete(key);
+    else if (isObject(value))
+      merged.set(key, mergeSiteContent(merged.get(key), value));
+    else if (value !== undefined) merged.set(key, value);
+  }
+  return Object.fromEntries(merged) as Prisma.InputJsonObject;
+}
+
 export async function agencySettings(tx: any = db) {
   return (
     (await tx.agencySettings.findUnique({ where: { id: "agency" } })) ?? {
@@ -26,6 +43,7 @@ export async function settingsRoutes(app: FastifyInstance) {
         whatsapp: z.string().max(100).optional(),
         email: z.string().email().optional().or(z.literal("")),
         heroImage: z.string().max(2000).optional(),
+        aboutImage: z.string().max(2000).optional(),
         heroVariant: z.enum(["cityscape", "collage"]).optional(),
         translations: z
           .record(
@@ -36,13 +54,24 @@ export async function settingsRoutes(app: FastifyInstance) {
       })
       .strict()
       .parse(req.body);
-    const settings = await db.agencySettings.upsert({
-      where: { id: "agency" },
-      create: { id: "agency", siteContent: values },
-      update: { siteContent: values },
-    });
-    await db.audit.create({
-      data: { actorId: req.actor.id, action: "WEBSITE_CONTENT", data: values },
+    const settings = await db.$transaction(async (tx) => {
+      // Lock before reading, including the first save when no settings row exists.
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('agency-site-content'))`;
+      const existing = await agencySettings(tx);
+      const siteContent = mergeSiteContent(existing.siteContent, values);
+      const saved = await tx.agencySettings.upsert({
+        where: { id: "agency" },
+        create: { id: "agency", siteContent },
+        update: { siteContent },
+      });
+      await tx.audit.create({
+        data: {
+          actorId: req.actor.id,
+          action: "WEBSITE_CONTENT",
+          data: values,
+        },
+      });
+      return saved;
     });
     return { data: settings.siteContent };
   });

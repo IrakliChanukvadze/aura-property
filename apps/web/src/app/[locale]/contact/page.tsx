@@ -10,7 +10,9 @@ export async function generateMetadata({
 }) {
   const { locale } = await params;
   const l = isLocale(locale) ? locale : "en";
-  return metadata(l, t(l).contact, t(l).contactBody, "/contact");
+  const site = await publicSite();
+  const copy = { ...t(l), ...site.translations?.[l] };
+  return metadata(l, copy.contact, copy.contactBody, "/contact");
 }
 export default async function Page({
   params,

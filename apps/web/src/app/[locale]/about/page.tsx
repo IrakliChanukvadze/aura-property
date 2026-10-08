@@ -10,7 +10,9 @@ export async function generateMetadata({
 }) {
   const { locale } = await params;
   const l = isLocale(locale) ? locale : "en";
-  return metadata(l, t(l).about, t(l).aboutIntro, "/about");
+  const site = await publicSite();
+  const copy = { ...t(l), ...site.translations?.[l] };
+  return metadata(l, copy.aboutTitle, copy.aboutIntro, "/about");
 }
 export default async function Page({
   params,
@@ -30,7 +32,7 @@ export default async function Page({
         <p className="page-intro">{d.aboutIntro}</p>
       </section>
       <div className="about-image">
-        <img src={imageCity} alt="Architectural cityscape" />
+        <img src={site.aboutImage || imageCity} alt={`Aura / ${d.about}`} />
       </div>
       <section className="section agency-section">
         <h2>{d.team}</h2>

@@ -216,6 +216,7 @@ export interface SiteContent {
   whatsapp?: string;
   email?: string;
   heroImage?: string;
+  aboutImage?: string;
   heroVariant?: "cityscape" | "collage";
   translations?: Partial<Record<Locale, Record<string, string>>>;
 }

@@ -555,7 +555,11 @@ test("website content is editable per-user and public projection excludes privat
     assert.equal(publicResult.translations.en.hero, "Preview headline");
     assert.equal(publicResult.defaultAgentRate, undefined);
   } finally {
-    await request(owner, "PATCH", "/api/site", before);
+    // PATCH now merges sections; restore the exact fixture snapshot directly.
+    await db.agencySettings.update({
+      where: { id: "agency" },
+      data: { siteContent: before },
+    });
   }
 });
 

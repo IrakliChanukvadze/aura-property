@@ -6,7 +6,7 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "test": "tsx --test src/*.test.ts",
+    "test": "tsx --test --test-concurrency=1 src/*.test.ts",
     "typecheck": "tsc --noEmit",
     "owner:init": "tsx src/bootstrap.ts"
   },

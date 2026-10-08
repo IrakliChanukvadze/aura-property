@@ -1,5 +1,7 @@
 # Deployment preparation
 
+Current costed domain-specific plan: [auraproperty.ge launch plan](auraproperty-ge-launch-plan.md), with the proposed production variable template at [infra/production.env.example](../../infra/production.env.example).
+
 No live deployment has been made. Cloudflare remains the DNS/security/CDN and R2 direction. First deployment can use Node containers behind Cloudflare; database must be persistent and independently backed up. Do not infer Workers compatibility from a successful Node build.
 
 ## Build targets

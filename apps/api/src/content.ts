@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { db, content, requireAdmin, ApiError } from "./db.js";
 import { authenticate } from "./auth.js";
+import { translateText, translationStatus } from "./translation.js";
 const locales = ["ka", "ru", "he", "en"];
 function explorerReady(buildings: any) {
   return (
@@ -361,45 +362,32 @@ export async function contentRoutes(app: FastifyInstance) {
       }),
     };
   });
-  app.post("/api/translate", { preHandler: authenticate }, async (req) => {
-    content(req.actor);
-    const b = z
-      .object({
-        text: z.string().min(1).max(100000),
-        source: z.enum(["ka", "ru", "he", "en"]),
-        target: z.enum(["ka", "ru", "he", "en"]),
-      })
-      .parse(req.body);
-    if (!process.env.TRANSLATION_WEBHOOK_URL)
-      throw new ApiError(
-        503,
-        "PROVIDER_REQUIRED",
-        "Configure translation provider",
-      );
-    try {
-      const res = await fetch(process.env.TRANSLATION_WEBHOOK_URL, {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          authorization: `Bearer ${process.env.TRANSLATION_WEBHOOK_TOKEN ?? ""}`,
-        },
-        body: JSON.stringify(b),
-        signal: AbortSignal.timeout(10000),
-      });
-      if (!res.ok) throw new Error("Provider rejected request");
-      const result = (await res.json()) as any;
-      const text = result?.text || result?.translation;
-      if (typeof text !== "string" || !text.trim())
-        throw new Error("Provider returned no translated text");
-      return { data: { text } };
-    } catch {
-      throw new ApiError(
-        502,
-        "TRANSLATION_FAILED",
-        "Translation provider unavailable or returned an invalid response",
-      );
-    }
-  });
+  app.get(
+    "/api/translation/status",
+    { preHandler: authenticate },
+    async (req) => {
+      content(req.actor);
+      return { data: translationStatus() };
+    },
+  );
+  app.post(
+    "/api/translate",
+    {
+      preHandler: authenticate,
+      config: { rateLimit: { max: 20, timeWindow: "1 minute" } },
+    },
+    async (req) => {
+      content(req.actor);
+      const b = z
+        .object({
+          text: z.string().min(1).max(100000),
+          source: z.enum(["ka", "ru", "he", "en"]),
+          target: z.enum(["ka", "ru", "he", "en"]),
+        })
+        .parse(req.body);
+      return { data: { text: await translateText(b) } };
+    },
+  );
 
   app.post("/api/fx", { preHandler: authenticate }, async (req) => {
     requireAdmin(req.actor);

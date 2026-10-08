@@ -18,11 +18,13 @@ Setup copies `.env.example` to ignored `.env` only if absent, starts isolated Po
 
 ```sh
 npm run typecheck
-npm test
+
+# See apps/api/README.md: tests need an isolated local aura_*test/audit database.
+DATABASE_URL='postgresql://USER:PASSWORD@localhost:5434/aura_test' npm test
 npm run build
 ```
 
-Do not build Next.js while its development server is using the same output directory; stop the web preview before a full build. Test suite uses disposable records in the local database and cleans them up. Sources and migrations are committed in ticket-sized slices on `codex/aura-mvp`.
+Do not build Next.js while its development server is using the same output directory; stop the web preview before a full build. The test suite uses a dedicated local test database with migrations applied; clear real webhook/R2/OpenAI credentials before running it. Tests clean up their fixtures, but some temporarily change shared agency settings. Sources and migrations are committed in ticket-sized slices.
 
 ## Product and review
 
@@ -30,8 +32,12 @@ Start with `AGENTS.md`, `docs/product/mvp-spec.md` and `docs/product/acceptance.
 
 ## Verification
 
-All workspace type checks and production builds pass. The 23 regression tests cover critical permissions, workflow and concurrency boundaries. Production dependency audit is clean; the Linux API container builds and passes a database health smoke test. See `tasks/implementation/AURA-010.md` for browser evidence and limits.
+AURA-026 (2026-10-08): 50 API tests pass against an isolated local database; API/admin/web type checks and API/admin builds pass. The website editor was checked at desktop/mobile widths, in dark mode, and with Hebrew content direction. Real translation-provider quality remains unverified until credentials are connected. See `tasks/implementation/AURA-026.md` for evidence and limits.
+
+The earlier full production builds, dependency audit and Linux API container smoke test are recorded in `tasks/implementation/AURA-010.md`; clean production-image builds and release smoke tests must be repeated for the actual deployment configuration.
 
 ## Release boundary
 
 Local implementation is separate from production deployment. Actual inventory/photos/plans and reviewed translations, agency contact/privacy copy, domain/Cloudflare access and email/SMS/translation/FX/storage providers must be supplied/validated before launch. Development OTP/email responses are explicitly local; production fails closed without providers. No live messages, hosting purchases or deployments have been performed. See `apps/api/README.md` and `docs/architecture/stack.md`.
+
+The costed `auraproperty.ge` launch plan is in [docs/architecture/auraproperty-ge-launch-plan.md](docs/architecture/auraproperty-ge-launch-plan.md), with a secret-free configuration template at [infra/production.env.example](infra/production.env.example).
