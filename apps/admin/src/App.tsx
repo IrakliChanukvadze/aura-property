@@ -7,6 +7,8 @@ import { Dashboard, Personnel, Calendar, Settings } from "./Workspace";
 import { SiteContent } from "./SiteContent";
 import { WebsiteTeam } from "./WebsiteTeam";
 import { Content } from "./Content";
+import { Integrations } from "./Integrations";
+import { integrationCopy } from "./integrations-copy";
 import {
   PermissionComponent,
   hasPermission,
@@ -280,6 +282,18 @@ export default function App() {
               {t("Website")}
             </button>
           </PermissionComponent>
+          <PermissionComponent user={user} permission="integrations">
+            <button
+              className={page === 10 ? "selected" : ""}
+              onClick={() => {
+                setPage(10);
+                setMenu(false);
+              }}
+            >
+              <span aria-hidden="true">⌘</span>
+              {integrationCopy[locale].title}
+            </button>
+          </PermissionComponent>
         </nav>
         <div className="side-bottom">
           <span className="avatar">{user.name?.slice(0, 1)}</span>
@@ -338,10 +352,18 @@ export default function App() {
         </header>
         <div className="page">
           <p className="eyebrow">{t("AURA WORKSPACE")}</p>
-          <h1>{page === 9 ? t("Website") : nav[locale][page]}</h1>
+          <h1>
+            {page === 10
+              ? integrationCopy[locale].title
+              : page === 9
+                ? t("Website")
+                : nav[locale][page]}
+          </h1>
           {error && <p className="error">{error}</p>}
           <PermissionComponent user={user} permission={pagePermission(page)}>
-            {page === 9 ? (
+            {page === 10 ? (
+              <Integrations onOpenSettings={() => setPage(8)} />
+            ) : page === 9 ? (
               <>
                 <SiteContent />
                 <WebsiteTeam user={user} />

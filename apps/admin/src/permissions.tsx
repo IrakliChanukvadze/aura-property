@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
-export type Permission = "crm" | "content" | "workspace";
+export type Permission = "crm" | "content" | "workspace" | "integrations";
 export function hasPermission(user: any, permission: Permission) {
   if (!user?.active) return false;
+  if (permission === "integrations") return user.role === "SUPER_ADMIN";
   if (permission === "content")
     return user.role === "SUPER_ADMIN" || user.contentEdit === true;
   if (permission === "crm")
@@ -20,5 +21,6 @@ export function PermissionComponent({
   return hasPermission(user, permission) ? <>{children}</> : null;
 }
 export function pagePermission(page: number): Permission {
+  if (page === 10) return "integrations";
   return [6, 7, 9].includes(page) ? "content" : page <= 3 ? "crm" : "workspace";
 }

@@ -442,3 +442,13 @@ Source for confirmed entries: owner conversation in this Codex chat.
 | D-234 | Confirmed provider direction, 2026-10-08 | Owner requested reusing Pini’s email setup. Pini uses Resend; Aura will use the same provider/account where possible, with its own verified auraproperty.ge sender. Shared API key compatibility depends on domain scope. Implement staff invitation/recovery/owner-init adapter; do not copy Pini lead-mailing features, credentials or sender. Live domain/key setup and authorized delivery test remain pending. |
 
 D-235 (2026-10-08, implementation evidence): Aura’s pending Resend sending domain is added in Ireland. Registrar nameservers remain the original parking servers; authoritative DNS setup and sender authorization are still pending. No live email sent or Pini domain settings changed. See AURA-029.
+
+
+| D-236 | Confirmed product direction, 2026-10-08 | Owner intends to evolve Aura CRM into a sellable product. First prove functionality with Aura; product branding, subscriptions and multi-company isolation are explicitly deferred. No second company may be onboarded before isolation is implemented and verified. Preserve current Aura permissions and business rules. |
+
+| D-237 | Confirmed implementation direction, 2026-10-08 | Build guided integration setup and usage instructions, credential/permission requirements, connection diagnostics and actionable troubleshooting. Provider authorization flows preferred where supported. Start with Integrations admin and existing provider diagnostics, then communication foundation and individual channels. Future inbox, calling/AI and finance remain phased work; provider-specific access and consequential financial/automation rules need agreement. |
+
+| D-238 | Confirmed orchestration, 2026-10-08 | Owner authorizes planner, UI/UX planner, coding and independent feature/UI review agents, competitor research and ticket-sized implementation. Optimize ease of use. Commit each verified ticket; distinguish configuration checks from real provider verification and future features from connected integrations. |
+
+
+| D-239 | Confirmed primary acceptance, 2026-10-08 | Owner defines ease of use as the main product challenge: explain every activation and usage step so a first-time customer can independently get full value. Feature availability and visual polish alone do not establish sellability. Review task completion, understandable next actions, error recovery and post-activation usage guidance. Operator-managed setup in AURA-033 is an explicitly interim limitation; self-service protected credentials/provider authorization are needed before commercial readiness. |

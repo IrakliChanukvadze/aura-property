@@ -32,6 +32,10 @@ npm run build
 
 Do not build Next.js while its development server is using the same output directory; stop the web preview before a full build. The test suite uses a dedicated local test database with migrations applied; clear real webhook/R2/OpenAI credentials before running it. Tests clean up their fixtures, but some temporarily change shared agency settings. Sources and migrations are committed in ticket-sized slices.
 
+## CRM development beyond MVP
+
+The agreed roadmap is in [docs/product/crm-roadmap.md](docs/product/crm-roadmap.md). First use Aura to prove integrations, communications and automation; company isolation, commercial branding and subscriptions are deferred. New development is recorded in AURA-033 onward and is not deployed merely by committing it.
+
 ## Product and review
 
 Start with `AGENTS.md`, `docs/product/mvp-spec.md` and `docs/product/acceptance.md`. The decision ledger retains superseded history; current spec resolves it. Ticket evidence lives in `tasks/implementation`. Hero cityscape is default; set `NEXT_PUBLIC_HERO_VARIANT=collage` for the alternative.

@@ -14,6 +14,7 @@ import { leaveRoutes } from "./leave.js";
 import { importRoutes } from "./imports.js";
 import { mediaRoutes } from "./media.js";
 import { settingsRoutes } from "./settings.js";
+import { integrationsRoutes } from "./integrations.js";
 import { runJobs } from "./jobs.js";
 export async function buildApp() {
   const app = Fastify({
@@ -118,6 +119,7 @@ export async function buildApp() {
   });
   await authRoutes(app);
   await settingsRoutes(app);
+  await integrationsRoutes(app);
   await contentRoutes(app);
   await inquiryRoutes(app);
   await crmRoutes(app);
