@@ -2,6 +2,12 @@
 
 Standalone residential-complex agency website and admin CRM. TypeScript monorepo: Next.js public website, React/Vite admin, Fastify API and PostgreSQL/Prisma.
 
+## Production
+
+Published 2026-10-08: [website](https://auraproperty.ge), [admin](https://admin.auraproperty.ge). Deployed application revision: `5f7b77002c3745934a74f2323edca7ef50e9e5ca`. GitHub main may contain newer documentation; a push does not automatically deploy.
+
+Aura has its own Frankfurt DigitalOcean server and database, behind Cloudflare Full (strict). Approved hosting: $18/month plus $3.60 weekly backups, before tax. Daily encrypted database backups to R2 and recovery into a disposable database are verified. See [deployment runbook](docs/architecture/deployment.md) and [launch evidence](tasks/implementation/AURA-030.md).
+
 ## Run locally
 
 Requires Node22+ and Docker Desktop running.
@@ -40,6 +46,6 @@ The earlier full production builds, dependency audit and Linux API container smo
 
 ## Release boundary
 
-Local implementation is separate from production deployment. Actual inventory/photos/plans and reviewed translations, agency contact/privacy copy, domain/Cloudflare access and email/SMS/translation/FX/storage providers must be supplied/validated before launch. Development OTP/email responses are explicitly local; production fails closed without providers. No live messages, hosting purchases or deployments have been performed. See `apps/api/README.md` and `docs/architecture/stack.md`.
+Production contains the approved Tbilisi Boulevard catalog and three public team profiles, without local CRM fixtures or demo accounts. The owner invitation was delivered; staff setup and owner password selection remain user actions. New website inquiries are verified. The owner explicitly approved launch with SMS deferred: repeat inquiries still require OTP and fail closed until SMS is configured. No production FX rate is configured, so GEL conversion remains unavailable. Review outstanding content and operational follow-ups in AURA-030. Development providers are disabled in production.
 
 The costed `auraproperty.ge` launch plan is in [docs/architecture/auraproperty-ge-launch-plan.md](docs/architecture/auraproperty-ge-launch-plan.md), with a secret-free configuration template at [infra/production.env.example](infra/production.env.example).
