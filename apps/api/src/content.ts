@@ -86,6 +86,25 @@ export function publicProject(p: any, usdGel?: number) {
     startingPriceCurrency: startCurrency ?? "USD",
   };
 }
+const polygon = z.array(
+  z.tuple([z.number().min(0).max(100), z.number().min(0).max(100)]),
+);
+// Drafts may be incomplete, but never store structures the explorer cannot read.
+const floorBody = z
+  .object({
+    id: z.string().min(1),
+    number: z.number().int().optional(),
+    image: z.string().optional(),
+    polygon: polygon.optional(),
+  })
+  .passthrough();
+const buildingBody = z
+  .object({
+    id: z.string().min(1),
+    coverImage: z.string().optional(),
+    floors: z.array(floorBody).default([]),
+  })
+  .passthrough();
 const projectBody = z.object({
   slug: z.string().regex(/^[a-z0-9-]+$/),
   city: z.string().min(1),
@@ -93,7 +112,7 @@ const projectBody = z.object({
   showPrices: z.boolean().default(true),
   constructionStatus: z.enum(["ONGOING", "COMPLETED"]).default("ONGOING"),
   translations: z.record(z.unknown()),
-  buildings: z.array(z.unknown()).default([]),
+  buildings: z.array(buildingBody).default([]),
   published: z.boolean().default(false),
 });
 export async function contentRoutes(app: FastifyInstance) {
@@ -226,9 +245,26 @@ export async function contentRoutes(app: FastifyInstance) {
           showPrice: z.boolean().default(true),
         })
         .parse(req.body);
+      const project = await db.project.findUnique({
+        where: { id: (req.params as any).id },
+      });
+      if (!project) throw new ApiError(404, "NOT_FOUND", "Project not found");
+      const buildings = project.buildings as any[];
+      if (
+        !buildings.some(
+          (building) =>
+            building.id === b.buildingId &&
+            building.floors?.some((floor: any) => floor.id === b.floorId),
+        )
+      )
+        throw new ApiError(
+          400,
+          "INVALID_FLOOR",
+          "Choose a floor belonging to this project and building",
+        );
       return {
         data: await db.unit.create({
-          data: { ...b, projectId: (req.params as any).id },
+          data: { ...b, projectId: project.id },
         }),
       };
     },
@@ -327,35 +363,44 @@ export async function contentRoutes(app: FastifyInstance) {
   });
   app.post("/api/translate", { preHandler: authenticate }, async (req) => {
     content(req.actor);
+    const b = z
+      .object({
+        text: z.string().min(1).max(100000),
+        source: z.enum(["ka", "ru", "he", "en"]),
+        target: z.enum(["ka", "ru", "he", "en"]),
+      })
+      .parse(req.body);
     if (!process.env.TRANSLATION_WEBHOOK_URL)
       throw new ApiError(
         503,
         "PROVIDER_REQUIRED",
         "Configure translation provider",
       );
-    const b = z
-      .object({
-        text: z.string().max(100000),
-        source: z.enum(["ka", "ru", "he", "en"]),
-        target: z.enum(["ka", "ru", "he", "en"]),
-      })
-      .parse(req.body);
-    const res = await fetch(process.env.TRANSLATION_WEBHOOK_URL, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        authorization: `Bearer ${process.env.TRANSLATION_WEBHOOK_TOKEN ?? ""}`,
-      },
-      body: JSON.stringify(b),
-    });
-    if (!res.ok)
+    try {
+      const res = await fetch(process.env.TRANSLATION_WEBHOOK_URL, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer ${process.env.TRANSLATION_WEBHOOK_TOKEN ?? ""}`,
+        },
+        body: JSON.stringify(b),
+        signal: AbortSignal.timeout(10000),
+      });
+      if (!res.ok) throw new Error("Provider rejected request");
+      const result = (await res.json()) as any;
+      const text = result?.text || result?.translation;
+      if (typeof text !== "string" || !text.trim())
+        throw new Error("Provider returned no translated text");
+      return { data: { text } };
+    } catch {
       throw new ApiError(
         502,
         "TRANSLATION_FAILED",
-        "Translation provider unavailable",
+        "Translation provider unavailable or returned an invalid response",
       );
-    return { data: await res.json() };
+    }
   });
+
   app.post("/api/fx", { preHandler: authenticate }, async (req) => {
     requireAdmin(req.actor);
     const b = z

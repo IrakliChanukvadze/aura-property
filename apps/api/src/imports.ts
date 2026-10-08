@@ -50,7 +50,15 @@ export async function importRoutes(app: FastifyInstance) {
           "Send XLSX file as base64 in file",
         );
       const book = new ExcelJS.Workbook();
-      await book.xlsx.load(Buffer.from(b.file, "base64") as any);
+      try {
+        await book.xlsx.load(Buffer.from(b.file, "base64") as any);
+      } catch {
+        throw new ApiError(
+          400,
+          "INVALID_FILE",
+          "Upload a valid .xlsx workbook using the provided template",
+        );
+      }
       const sheet = book.worksheets[0];
       if (!sheet || sheet.rowCount > 1001)
         throw new ApiError(400, "LIMIT", "Maximum 1000 rows");

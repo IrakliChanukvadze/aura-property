@@ -73,9 +73,34 @@ async function lost(tx: any, lead: any, u: any, comment: string) {
       });
   }
 }
+// The admin serializes unselected filters as empty strings. Repeated query
+// parameters remain arrays and must still fail their scalar schema.
+const optionalFilter = <T extends z.ZodTypeAny>(schema: T) =>
+  z.preprocess(
+    (value) => (value === "" ? undefined : value),
+    schema.optional(),
+  );
 export async function crmRoutes(app: FastifyInstance) {
   app.get("/api/leads", { preHandler: authenticate }, async (req) => {
-    const q = req.query as any;
+    const q = z
+      .object({
+        scope: optionalFilter(z.enum(["active", "lost", "won"])),
+        stage: optionalFilter(z.enum(stages)),
+        agentId: optionalFilter(z.string()),
+        projectId: optionalFilter(z.string()),
+        teamId: optionalFilter(z.string()),
+        source: optionalFilter(z.enum(["WEBSITE", "MANUAL", "EXCEL"])),
+        search: optionalFilter(z.string()),
+        from: optionalFilter(z.string().date()),
+        to: optionalFilter(z.string().date()),
+      })
+      .parse(req.query);
+    if (q.from && q.to && q.from > q.to)
+      throw new ApiError(
+        400,
+        "INVALID_DATES",
+        "Start date must not follow end date",
+      );
     const and: any[] = [await scope(req.actor)];
     if (q.scope === "active") and.push({ stage: { notIn: ["LOST", "WON"] } });
     if (q.scope === "lost") and.push({ stage: "LOST" });
@@ -1016,6 +1041,17 @@ export async function crmRoutes(app: FastifyInstance) {
               ? Number(leadHistory?.leadRate ?? leader.leadRate)
               : 0,
             actingRate = Number(cover?.actingRate ?? 0);
+          if (
+            ![agentRate, leadRate, actingRate].every(
+              (rate) => Number.isFinite(rate) && rate >= 0 && rate <= 100,
+            ) ||
+            actingRate > leadRate
+          )
+            throw new ApiError(
+              409,
+              "COMMISSION_CONFIGURATION",
+              "The signing-date commission rates conflict. Ask SuperAdmin to review the team lead and acting-cover rates before recording this sale.",
+            );
           const amounts = commission(
             b.price,
             fx,

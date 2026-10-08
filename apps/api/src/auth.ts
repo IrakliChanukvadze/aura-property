@@ -198,7 +198,7 @@ export async function authRoutes(app: FastifyInstance) {
         email: z.string().email(),
         role: z.enum(["AGENT", "TEAM_LEAD", "EDITOR"]).default("AGENT"),
         teamId: z.string().optional(),
-        contentEdit: z.boolean().default(false),
+        contentEdit: z.boolean().optional(),
         locale: z.enum(["ka", "ru", "he", "en"]).default("en"),
       })
       .parse(req.body);
@@ -226,6 +226,7 @@ export async function authRoutes(app: FastifyInstance) {
     const u = await db.user.create({
       data: {
         ...b,
+        contentEdit: b.contentEdit ?? b.role === "EDITOR",
         agentRate: defaults.defaultAgentRate,
         leadRate: defaults.defaultLeadRate,
         email: b.email.toLowerCase(),

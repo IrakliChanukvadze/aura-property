@@ -28,6 +28,14 @@ const formats: Record<string, { ext: string; test: (b: Buffer) => boolean }> = {
     test: (b) => b.subarray(0, 5).toString() === "%PDF-",
   },
 };
+// Keep the configured provider contract; classify transport failures for callers.
+async function storageFetch(url: string, options: RequestInit) {
+  try {
+    return await fetch(url, { ...options, signal: AbortSignal.timeout(10000) });
+  } catch {
+    throw new ApiError(502, "STORAGE_FAILED", "Storage provider unavailable");
+  }
+}
 export async function mediaRoutes(app: FastifyInstance) {
   app.post(
     "/api/uploads",
@@ -75,7 +83,7 @@ export async function mediaRoutes(app: FastifyInstance) {
         await r2Put(key, bytes, b.mime);
         path = key;
       } else if (process.env.STORAGE_WEBHOOK_URL) {
-        const result = await fetch(process.env.STORAGE_WEBHOOK_URL, {
+        const result = await storageFetch(process.env.STORAGE_WEBHOOK_URL, {
           method: "POST",
           headers: {
             "content-type": "application/json",
@@ -141,7 +149,7 @@ export async function mediaRoutes(app: FastifyInstance) {
       .header("cache-control", "private, no-store");
     if (r2Configured()) return reply.send(await r2Get(item.path));
     if (process.env.STORAGE_WEBHOOK_URL) {
-      const res = await fetch(
+      const res = await storageFetch(
         `${process.env.STORAGE_WEBHOOK_URL}?key=${encodeURIComponent(item.path)}`,
         {
           headers: {
@@ -151,15 +159,34 @@ export async function mediaRoutes(app: FastifyInstance) {
       );
       if (!res.ok)
         throw new ApiError(502, "STORAGE_FAILED", "Storage unavailable");
-      return reply.send(Buffer.from(await res.arrayBuffer()));
+      let bytes: Buffer;
+      try {
+        // The fetch deadline also aborts response-body consumption.
+        bytes = Buffer.from(await res.arrayBuffer());
+      } catch {
+        throw new ApiError(
+          502,
+          "STORAGE_FAILED",
+          "Storage provider unavailable",
+        );
+      }
+      return reply.send(bytes);
     }
     if (!isDevelopment)
       throw new ApiError(503, "STORAGE_REQUIRED", "Storage unavailable");
-    return reply.send(
-      await readFile(
-        resolve(process.env.UPLOAD_DIR ?? ".data/uploads", item.path),
-      ),
-    );
+    try {
+      return reply.send(
+        await readFile(
+          resolve(process.env.UPLOAD_DIR ?? ".data/uploads", item.path),
+        ),
+      );
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+        reply.header("content-type", "application/json");
+        throw new ApiError(404, "NOT_FOUND", "File no longer available");
+      }
+      throw error;
+    }
   };
   app.get(
     "/api/uploads/:id",

@@ -1,3 +1,5 @@
+import { ApiError } from "./errors.js";
+export { ApiError } from "./errors.js";
 import { PrismaClient } from "@prisma/client";
 export const db = new PrismaClient();
 export type Actor = {
@@ -9,15 +11,6 @@ export type Actor = {
   name: string;
   email: string;
 };
-export class ApiError extends Error {
-  constructor(
-    public status: number,
-    public code: string,
-    message: string,
-  ) {
-    super(message);
-  }
-}
 export function requireAdmin(u: Actor) {
   if (u.role !== "SUPER_ADMIN")
     throw new ApiError(403, "FORBIDDEN", "SuperAdmin required");

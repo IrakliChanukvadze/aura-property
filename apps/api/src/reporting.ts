@@ -6,6 +6,9 @@ import { z } from "zod";
 export function periodBounds(month: string, yearly = false) {
   const [year, number] = month.split("-").map(Number);
   if (
+    !/^\d{4}-\d{2}$/.test(month) ||
+    year < 1000 ||
+    year > 9998 ||
     !Number.isInteger(year) ||
     !Number.isInteger(number) ||
     number < 1 ||
@@ -53,7 +56,14 @@ export async function reportingRoutes(app: FastifyInstance) {
   );
   app.get("/api/commissions", { preHandler: authenticate }, async (req) => {
     const u = req.actor;
-    const month = (req.query as any).month;
+    const { month } = z
+      .object({
+        month: z
+          .string()
+          .regex(/^\d{4}-\d{2}$/)
+          .optional(),
+      })
+      .parse(req.query);
     const selectedPeriod = month ? periodBounds(month) : null;
     const sales = await db.sale.findMany({
       where: {

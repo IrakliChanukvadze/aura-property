@@ -1,3 +1,4 @@
+import { ApiError } from "./errors.js";
 import {
   randomBytes,
   scryptSync,
@@ -17,7 +18,11 @@ export const stages = [
 export function phone(value: string) {
   const p = value.replace(/[\s().-]/g, "");
   if (!/^\+?[0-9]{7,15}$/.test(p))
-    throw new Error("Valid international phone required");
+    throw new ApiError(
+      400,
+      "INVALID_PHONE",
+      "Valid international phone required",
+    );
   return p.startsWith("+") ? p : `+${p}`;
 }
 export function hashPassword(value: string) {

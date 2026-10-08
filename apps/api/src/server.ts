@@ -16,12 +16,17 @@ import { settingsRoutes } from "./settings.js";
 import { runJobs } from "./jobs.js";
 export async function buildApp() {
   const app = Fastify({ logger: true, bodyLimit: 5242880 });
+  const allowedOrigins = (
+    process.env.ALLOWED_ORIGINS ??
+    "http://localhost:3000,http://localhost:3100,http://localhost:5173"
+  )
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
   await app.register(cookie);
   await app.register(cors, {
-    origin: (
-      process.env.ALLOWED_ORIGINS ??
-      "http://localhost:3000,http://localhost:5173"
-    ).split(","),
+    origin: allowedOrigins,
+    methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     credentials: true,
   });
   await app.register(rateLimit, { max: 200, timeWindow: "1 minute" });
@@ -33,15 +38,12 @@ export async function buildApp() {
       req.cookies.aura_session
     ) {
       const origin = req.headers.origin;
-      const allowed = (
-        process.env.ALLOWED_ORIGINS ??
-        "http://localhost:3000,http://localhost:5173"
-      ).split(",");
-      if (!origin || !allowed.includes(origin))
+      if (!origin || !allowedOrigins.includes(origin))
         throw new ApiError(403, "CSRF", "Allowed origin required");
     }
   });
   app.setErrorHandler((err, req, reply) => {
+    reply.type("application/json");
     if (err instanceof ApiError)
       return reply
         .status(err.status)
@@ -53,6 +55,24 @@ export async function buildApp() {
           message: err.issues
             .map((i) => `${i.path.join(".")}: ${i.message}`)
             .join(";"),
+        },
+      });
+    if ((err as any).code === "P2020")
+      return reply.status(400).send({
+        error: {
+          code: "VALIDATION",
+          message: "Numeric value is outside the supported range",
+        },
+      });
+    if ((err as any).code === "P2025")
+      return reply.status(404).send({
+        error: { code: "NOT_FOUND", message: "Record not found" },
+      });
+    if ((err as any).code === "P2003")
+      return reply.status(409).send({
+        error: {
+          code: "REFERENCE_CONFLICT",
+          message: "Related record is missing or still in use",
         },
       });
     if ((err as any).code === "P2002")
