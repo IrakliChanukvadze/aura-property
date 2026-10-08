@@ -63,7 +63,7 @@ Cloudflare-ზე საჭიროა დომენის დამატე
 
 - უკვე გვაქვს web/API/admin Docker target-ები, versioned Prisma migrations, health endpoint, per-user უფლებები, secure production cookies, R2 adapter, owner invitation bootstrap და Node background jobs.
 - AURA-026 ამარტივებს About/hero/services/contact რედაქტორს, სექციურ შენახვას და AI თარგმანის განხილვას. შენახული ტექსტი ახალი deploy-ის გარეშე აისახება საიტზე. არ არის საჭირო მთელი დიზაინის ხელახლა აწყობა.
-- Email/SMS ამჟამად ზოგადი webhook კონტრაქტებია. Resend/Twilio/სხვა provider-ის key მარტო საკმარისი არ არის: შერჩეულ პროვაიდერზე კონკრეტული adapter ან დაცული relay უნდა დასრულდეს და გაიტესტოს. URL ველი vendor endpoint-ზე პირდაპირ არ უნდა მივუთითოთ, თუ payload/authorization არ ემთხვევა.
+- Email: Resend-ის პირდაპირი adapter მზად არის და AURA-029-ში შემოწმებულია; domain verification და რეალური გაგზავნა ჯერ დასასრულებელია. SMS ჯერ ზოგადი webhook კონტრაქტია: შერჩეულ პროვაიდერზე კონკრეტული adapter ან დაცული relay უნდა დასრულდეს და გაიტესტოს. URL ველი vendor endpoint-ზე პირდაპირ არ უნდა მივუთითოთ, თუ payload/authorization არ ემთხვევა.
 - საჭიროა production Compose/reverse-proxy და CI release workflow: build → tests → image tag Git SHA-ით → registry → deploy healthcheck. Docker build target/URL-ები უნდა შემოწმდეს production env-ით და build-time API-ს ხელმისაწვდომობის გარეშე. სასურველია runtime image-ის შემცირება და non-root Node მომხმარებელი.
 - Proxy-ს მიღმა რეალური client IP და rate limiting უნდა გაიტესტოს. ამჟამად Fastify-ს trustProxy არ აქვს; ყველა მომხმარებელი proxy IP-ის ერთ ლიმიტში არ უნდა მოხვდეს. დავუშვებთ მხოლოდ სანდო proxy hops/ქსელს, საჯარო spoofed header-ის ნდობის გარეშე.
 - საჯარო healthcheck-ს დაემატება release smoke checks და jobs-ის მუშაობის მონიტორინგი; health endpoint მარტო ყველა provider-ის/შეხსენების მუშაობას არ ადასტურებს.
@@ -101,3 +101,6 @@ Production შეიქმნება ცარიელი, ცალკე Au
 ჩვეულებრივი განახლება: მცირე ticket/commit → ავტომატური checks → staging → backup თუ migration არის → ახალი immutable image → migrations → health/smoke checks → production. ინახება წინა image-ის tag. App rollback აბრუნებს image-ს; database migration ავტომატურად უკან არ ბრუნდება. სასურველია backward-compatible expand/contract ცვლილებები. DB restore გადაუდებელი ნაბიჯია და ბოლო backup-ის შემდეგ მიღებულ მონაცემებს ეხება, ამიტომ incident-ის დროს ცალკე გადაწყვეტილებას მოითხოვს.
 
 შემდეგი პრაქტიკული ნაბიჯია სერვერის ზომისა და provider-ების არჩევა, რის შემდეგაც შესაძლებელი იქნება კონკრეტული deployment კონფიგურაციის დასრულება და staging-ზე გაშვება. მიმდინარე ticket არ აცხადებს საიტს უკვე გამოქვეყნებულად.
+
+## DNS მომზადების განახლება — 2026-10-08
+Cloudflare Free zone და Resend-ის სამი DNS ჩანაწერი მომზადებულია. არსებული parking A ჩანაწერი შენარჩუნებულია. Domenebi-ზე Cloudflare nameserver-ები შევსებულია, მაგრამ შენახვა მფლობელის დასტურს ელოდება. დომენი ჯერ parking nameserver-ებზეა; ეს არ არის საიტის გაშვება. დეტალები: `tasks/implementation/AURA-029.md`.

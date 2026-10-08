@@ -30,3 +30,11 @@ Pending DNS from Resend (apply only through the authoritative DNS provider, afte
 - Independent read-only specialist review: no actionable findings across provider precedence, headers, secrets, failure semantics, timeout/idempotency, callers and test isolation.
 - Private `.env.production.local` remains Git-ignored and mode 600. Added empty `RESEND_API_KEY` and explicit Aura sender without changing existing R2/OpenRouter credentials.
 - Browser evidence: `/tmp/aura-resend-domain-pending.png`. Domain is configured in the provider but not DNS-verified. Local API still uses local development configuration; live delivery is not claimed.
+
+
+## DNS preparation — awaiting owner confirmation
+Following the owner’s request to use the open Domenebi session, created Aura’s Cloudflare Free zone and staged Resend’s DKIM TXT plus both CNAMEs (`rsend`, `send`). All four records, including imported apex A `217.147.225.186`, are DNS-only while the website remains parked. Cloudflare’s robots preference injection was disabled in onboarding so Aura’s application retains its SEO rules. No paid plan selected.
+
+Cloudflare assigned `elisa.ns.cloudflare.com` and `jakub.ns.cloudflare.com`. These are filled into Domenebi’s custom nameserver form but **Save has not been clicked**. The original parking delegation remains active. Browser confirmation is pending because saving delegates authoritative DNS and activates email sender authorization. No DNSSEC setting changed; registrar shows DNSSEC unavailable under the current parking setup. No MX, root TXT or DMARC records were returned by public DNS checks; receiving email remains a separate mailbox setup.
+
+Evidence: `/tmp/aura-cloudflare-dns-prepared.png`, `/tmp/aura-nameservers-ready.png`. Remaining steps: owner confirmation; save nameservers; verify authoritative DNS propagation and Resend status; owner supplies compatible Resend key in private env; separately authorize a real-recipient delivery test.
