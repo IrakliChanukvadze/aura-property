@@ -12,6 +12,7 @@ Prepared 8 October 2026, Asia/Tbilisi. Research and decision proposals; no campa
 - [Website design](design-research.md): live Pini observations and proposed map-first directions; Aura's approved cinematic direction retained.
 - [UGC and production costs](ugc-research.md): footage-preserving repair, voice options, retry costs and content concepts.
 - [Supply density and onboarding](supply-density.md): ten public project/developer research examples and freshness checks; not partners or authorized inventory.
+- [Three-category launch tracks](category-launch-plan.md): project, house and land readiness, sparse-map behavior and separate scorecards.
 - [Production packages](production-packages.md): exact masters/variants/language editions, labor, rights and margin sensitivity.
 - [Concrete screen briefs](screen-briefs.md): desktop/mobile layout, copy, empty states and 15 read-only buyer tasks.
 - [Execution backlog](execution-backlog.csv): reviewable actions, dependencies, owners and evidence.

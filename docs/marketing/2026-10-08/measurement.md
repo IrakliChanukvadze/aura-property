@@ -12,6 +12,8 @@ Planning specification; no analytics SDK, cookie setting, CRM schema or ad accou
 
 ## Definitions to agree
 
+Agree listing-count identity through the [category launch tracks](category-launch-plan.md): project units, community group markers and plot-development overviews must not inflate unique house/parcel totals. Report researched prospects, authorized records and published inventory separately. Freshness is fact-specific; a photo/title edit does not refresh price or availability confirmation.
+
 | Event | Definition | Does not prove |
 |---|---|---|
 | contact_click | Tap on phone/WhatsApp or other contact exit | A message was sent, a call connected or a lead accepted |

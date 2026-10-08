@@ -4,6 +4,8 @@
 
 ## Fixed scope and shared truths
 
+Pass 3 supplements: [category launch tracks](category-launch-plan.md) propose result/group-count identity, named category-preserving sparse-area recovery and fact-specific price/availability/photo dates. These remain design/content choices for review, not implemented states. A generic page-update date must not imply every fact was freshly confirmed.
+
 Pini is map-first with Projects / Houses / Land. No standalone individual-flat posts or flat catalogue. Apartments appear only inside a selected development's building/floor explorer. Free **project** listing is confirmed; do not infer that house/land posting or every Premium service is free. Exact Premium scope/pricing remains undecided.
 
 Aura remains an independent residential-complex agency. D-231 approves the longer cinematic editorial homepage and richer motion. Preserve its deeper layout and separate project-introduction, complex-overview and block/floor URLs. D-232 removes A/B tabs from the explorer filter bar: shared-cover buildings expose floor regions together; accessible fallback selection remains necessary. Earlier QA images are evidence of an earlier local state, not an instruction to restore superseded controls.

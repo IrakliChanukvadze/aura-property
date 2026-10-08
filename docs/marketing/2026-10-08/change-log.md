@@ -64,3 +64,12 @@ Append dated findings, changed assumptions and verification evidence here. Keep 
 - Added comparable pilot cohorts, a paid-demand/accepted-output/cost ledger, an attention test and a morning choice sheet. These are proposals, not authorization to spend, contact customers or implement analytics.
 - Linked the new reports into the strategy, measurement and index documents. Kept Pini categories, free-project policy, undecided house/land pricing and Premium offer, Aura independence and approved cinematic design intact.
 - Verified relative document links and whitespace; no app tests needed for documentation-only changes. No campaign outcomes, customer prices or conversion benchmarks were invented. No push, merge, deployment, publication, outreach, upload, generation, account change or spend.
+
+## Overnight pass 3 — 8 October, approximately 06:30
+
+- Confirmed the research branch and clean tree before work; no branch switch or application edits.
+- Added a three-category launch plan so a project-led distribution wedge does not leave houses and land without preparation, content, inquiry recipients or separate scorecards. House/land pricing remains undecided and Aura's scope remains residential complexes.
+- Requested a bounded design specialist review, read its report and integrated three gaps: distinct property versus group-marker counts, named geography in sparse-area recovery, and separate fact confirmation dates. Added paper acceptance tasks; no live buyer testing or approved design change is implied.
+- Added three dependency-ordered backlog actions. Corrected MKT-020 from ambiguous three Premium offers to one selected offer with a small customer cohort, consistent with the strategy's recommendation against parallel unvalidated offers.
+- Linked category proposals into screen briefs, strategy and measurement. No new market facts or paid-provider prices were introduced in this pass; external sources were not needed for these explicitly marked operating proposals.
+- Checked relative links, CSV structure and whitespace. Documents only; no code tests, spend, outreach, upload, generation, publication, deployment, push or merge.

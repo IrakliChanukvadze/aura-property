@@ -81,6 +81,8 @@ Aura direction: **cinematic agency with concrete proof**. Preserve the approved 
 
 Targets are not existing inventory or promises. Do not buy substantial traffic into empty category/area states.
 
+The [category launch tracks](category-launch-plan.md) give houses and land their own preparation, content, recipients and scorecards. Project-led distribution does not remove either category, imply free house/land posting or extend Aura's mandate.
+
 ### 90-day budget hypothesis
 
 Supply onboarding $1,200; refresh labor $600; content $1,500; media $1,800; tools/research $300; contingency $600 = **$6,000**. Internal time is an economic allowance, not necessarily an external invoice. Revenue should not be netted against this envelope until paid pilots exist.
