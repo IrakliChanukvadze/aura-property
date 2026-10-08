@@ -285,3 +285,24 @@ model AgencySettings {
  defaultLeadRate Decimal @default(0.5) @db.Decimal(8,4)
  updatedAt DateTime @updatedAt
 }
+
+// Internal verified-event inbox. Customer/channel adapters are not enabled yet.
+model CommunicationEvent {
+ id String @id @default(cuid())
+ provider String
+ accountId String
+ externalEventId String
+ payload Json
+ state String @default("RECEIVED")
+ attempts Int @default(0)
+ nextAttemptAt DateTime @default(now())
+ leaseToken String?
+ leaseExpiresAt DateTime?
+ lastErrorCode String?
+ receivedAt DateTime @default(now())
+ processedAt DateTime?
+ updatedAt DateTime @updatedAt
+ @@unique([provider,accountId,externalEventId])
+ @@index([state,nextAttemptAt])
+ @@index([state,leaseExpiresAt])
+}
