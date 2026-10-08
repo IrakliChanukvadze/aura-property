@@ -1,5 +1,5 @@
 import { t } from "./i18n";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api, mediaUrl } from "./api";
 import { Form, Modal, Empty, type Field, currencies } from "./ui";
 import "./project-editor.css";
@@ -12,7 +12,8 @@ const projectSteps = [
   "Annotations",
   "Review & publish",
 ];
-const locales = ["en", "ka", "ru", "he"];
+const locales = ["en", "ka", "ru", "he"] as const;
+type ContentLocale = (typeof locales)[number];
 export function Content({
   kind,
   user,
@@ -25,8 +26,11 @@ export function Content({
     [selected, setSelected] = useState<any>(null),
     [dialog, setDialog] = useState(false),
     [error, setError] = useState(""),
-    [locale, setLocale] = useState("en"),
-    [step, setStep] = useState(0);
+    [locale, setLocale] = useState<ContentLocale>("en"),
+    [step, setStep] = useState(0),
+    [translating, setTranslating] = useState(false);
+  const translationPending = useRef(false);
+  const contentForm = useRef<HTMLFieldSetElement>(null);
   const load = () =>
     api<any[]>(`/${endpoint}`)
       .then(setItems)
@@ -40,7 +44,9 @@ export function Content({
       selected?.id ? "PATCH" : "POST",
       body,
     );
-    setSelected({ ...selected, ...value });
+    setSelected((current: any) =>
+      current?.id === selected?.id ? { ...current, ...value } : current,
+    );
     await load();
     return value;
   };
@@ -195,7 +201,7 @@ export function Content({
               {projectSteps.map((label, index) => (
                 <button
                   key={label}
-                  disabled={!selected?.id && index > 0}
+                  disabled={translating || (!selected?.id && index > 0)}
                   aria-current={step === index ? "step" : undefined}
                   onClick={() => {
                     setStep(index);
@@ -214,6 +220,7 @@ export function Content({
                 {locales.map((l) => (
                   <button
                     key={l}
+                    disabled={translating}
                     onClick={() => setLocale(l)}
                     className={locale === l ? "selected" : ""}
                   >
@@ -222,64 +229,70 @@ export function Content({
                   </button>
                 ))}
               </div>
-              <Form
-                key={`${selected?.id || "new"}-${locale}`}
-                fields={
-                  kind === "projects" && step === 1
-                    ? fields.filter(
-                        (f) => f.name === "title" || f.name === "description",
-                      )
-                    : fields
-                }
-                onSubmit={async (v) => {
-                  const body =
-                    kind === "blogs"
-                      ? {
-                          slug: v.slug,
-                          coverImage: v.coverImage || null,
-                          ...(v.publicationDate
-                            ? {
-                                publishedAt: new Date(
-                                  v.publicationDate + "T12:00:00+04:00",
-                                ).toISOString(),
-                              }
-                            : {}),
-                          translations: {
-                            ...selected?.translations,
-                            [locale]: {
-                              title: v.title,
-                              body: v.body,
-                              reviewed: false,
+              <fieldset
+                ref={contentForm}
+                disabled={translating}
+                style={{ border: 0, margin: 0, padding: 0, minWidth: 0 }}
+              >
+                <Form
+                  key={`${selected?.id || "new"}-${locale}`}
+                  fields={
+                    kind === "projects" && step === 1
+                      ? fields.filter(
+                          (f) => f.name === "title" || f.name === "description",
+                        )
+                      : fields
+                  }
+                  onSubmit={async (v) => {
+                    const body =
+                      kind === "blogs"
+                        ? {
+                            slug: v.slug,
+                            coverImage: v.coverImage || null,
+                            ...(v.publicationDate
+                              ? {
+                                  publishedAt: new Date(
+                                    v.publicationDate + "T12:00:00+04:00",
+                                  ).toISOString(),
+                                }
+                              : {}),
+                            translations: {
+                              ...selected?.translations,
+                              [locale]: {
+                                title: v.title,
+                                body: v.body,
+                                reviewed: false,
+                              },
                             },
-                          },
-                        }
-                      : {
-                          slug: v.slug ?? selected?.slug,
-                          city: v.city ?? selected?.city,
-                          showPrices:
-                            v.showPrices === undefined
-                              ? (selected?.showPrices ?? true)
-                              : v.showPrices === "true",
-                          constructionStatus:
-                            v.constructionStatus ??
-                            selected?.constructionStatus,
-                          coverImage: v.coverImage ?? selected?.coverImage,
-                          buildings: selected?.buildings || [],
-                          translations: {
-                            ...selected?.translations,
-                            [locale]: {
-                              title: v.title,
-                              description: v.description,
-                              reviewed: false,
+                          }
+                        : {
+                            slug: v.slug ?? selected?.slug,
+                            city: v.city ?? selected?.city,
+                            showPrices:
+                              v.showPrices === undefined
+                                ? (selected?.showPrices ?? true)
+                                : v.showPrices === "true",
+                            constructionStatus:
+                              v.constructionStatus ??
+                              selected?.constructionStatus,
+                            coverImage: v.coverImage ?? selected?.coverImage,
+                            buildings: selected?.buildings || [],
+                            translations: {
+                              ...selected?.translations,
+                              [locale]: {
+                                title: v.title,
+                                description: v.description,
+                                reviewed: false,
+                              },
                             },
-                          },
-                        };
-                  await save({ ...body, published: false });
-                  if (kind === "projects" && !selected?.id) setStep(1);
-                  setError("");
-                }}
-                label={t("Save draft")}
-              />
+                          };
+                    await save({ ...body, published: false });
+                    if (kind === "projects" && !selected?.id) setStep(1);
+                    setError("");
+                  }}
+                  label={t("Save draft")}
+                />
+              </fieldset>
             </>
           )}
           {selected?.id && (
@@ -287,39 +300,95 @@ export function Content({
               {(kind === "blogs" || step === 1 || step === 6) && (
                 <div className="action-grid">
                   <button
+                    disabled={translating}
+                    aria-busy={translating}
                     onClick={async () => {
+                      if (translationPending.current) return;
+                      const key = kind === "blogs" ? "body" : "description";
+                      const storedSource =
+                        selected.translations?.[locale] || {};
+                      const form = contentForm.current?.querySelector("form");
+                      // Capture the current inputs before the fieldset is disabled.
+                      // The final project review step has no form and uses saved copy.
+                      const inputs = form ? new FormData(form) : null;
+                      const source = inputs
+                        ? {
+                            ...storedSource,
+                            title: String(inputs.get("title") ?? ""),
+                            [key]: String(inputs.get(key) ?? ""),
+                          }
+                        : storedSource;
+                      const sourceChanged =
+                        source.title !== storedSource.title ||
+                        source[key] !== storedSource[key];
+                      translationPending.current = true;
+                      setTranslating(true);
+                      setError("");
                       try {
-                        const translations = { ...selected.translations };
+                        const result = await api<{
+                          fields: {
+                            id: string;
+                            translations: Record<ContentLocale, string>;
+                          }[];
+                        }>("/translate/batch", "POST", {
+                          sourceLanguage: locale,
+                          fields: [
+                            { id: "title", text: source?.title, kind: "title" },
+                            {
+                              id: key,
+                              text: source?.[key],
+                              kind: "description",
+                            },
+                          ],
+                        });
+                        const suggestions = new Map(
+                          result.fields.map((field) => [
+                            field.id,
+                            field.translations,
+                          ]),
+                        );
+                        const translations = {
+                          ...selected.translations,
+                          [locale]: {
+                            ...source,
+                            ...(sourceChanged ? { reviewed: false } : {}),
+                          },
+                        };
                         for (const target of locales.filter(
                           (l) => l !== locale,
                         )) {
-                          const source = selected.translations[locale];
-                          const title = await api("/translate", "POST", {
-                            text: source.title,
-                            source: locale,
-                            target,
-                          });
-                          const key = kind === "blogs" ? "body" : "description";
-                          const body = await api("/translate", "POST", {
-                            text: source[key],
-                            source: locale,
-                            target,
-                          });
+                          const title = suggestions.get("title")?.[target];
+                          const body = suggestions.get(key)?.[target];
+                          if (
+                            typeof title !== "string" ||
+                            !title.trim() ||
+                            typeof body !== "string" ||
+                            !body.trim()
+                          )
+                            throw new Error(
+                              "Invalid translation. Your source has not changed.",
+                            );
                           translations[target] = {
-                            title: title.text || title.translation,
-                            [key]: body.text || body.translation,
+                            ...translations[target],
+                            title,
+                            [key]: body,
                             reviewed: false,
                           };
                         }
                         await save({ translations, published: false });
                       } catch (e) {
                         setError((e as Error).message);
+                      } finally {
+                        translationPending.current = false;
+                        setTranslating(false);
                       }
                     }}
                   >
                     {t("Automatically translate")}
+                    {translating ? "…" : ""}
                   </button>
                   <button
+                    disabled={translating}
                     onClick={async () => {
                       try {
                         await save({
@@ -339,6 +408,7 @@ export function Content({
                   </button>
                   <button
                     className="primary"
+                    disabled={translating}
                     onClick={async () => {
                       try {
                         await save({ published: !selected.published });
@@ -395,14 +465,17 @@ export function Content({
           )}
           {kind === "projects" && selected?.id && (
             <footer className="project-step-footer">
-              <button disabled={step === 0} onClick={() => setStep(step - 1)}>
+              <button
+                disabled={translating || step === 0}
+                onClick={() => setStep(step - 1)}
+              >
                 {t("Back")}
               </button>
               <span>
                 {step + 1} / {projectSteps.length}
               </span>
               <button
-                disabled={step === projectSteps.length - 1}
+                disabled={translating || step === projectSteps.length - 1}
                 onClick={() => setStep(step + 1)}
               >
                 {t("Next")}

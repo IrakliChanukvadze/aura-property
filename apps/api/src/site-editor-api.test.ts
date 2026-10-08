@@ -16,6 +16,8 @@ if (
   );
 process.env.NODE_ENV = "test";
 const providerKeys = [
+  "OPENROUTER_API_KEY",
+  "CHAT_MODEL",
   "OPENAI_API_KEY",
   "OPENAI_TRANSLATION_MODEL",
   "TRANSLATION_WEBHOOK_URL",
@@ -400,5 +402,186 @@ test("translation rejects invalid input before calling a provider and applies a 
   const blocked = await request(limited, "POST", "/api/translate", translation);
   assert.equal(blocked.statusCode, 429, blocked.body);
   assert.equal(blocked.json().error.code, "RATE_LIMIT");
+  assert.equal(calls, 20);
+});
+
+const batchTranslation = {
+  sourceLanguage: "he",
+  fields: [
+    { id: "title", text: "  דירה\n2 חדרים  ", kind: "title" },
+    { id: "body", text: "תיאור", kind: "description" },
+  ],
+};
+function openRouterCompleted(options?: RequestInit) {
+  const input = JSON.parse(
+    JSON.parse(String(options?.body)).messages[1].content,
+  );
+  return Response.json({
+    choices: [
+      {
+        finish_reason: "tool_calls",
+        message: {
+          role: "assistant",
+          tool_calls: [
+            {
+              type: "function",
+              function: {
+                name: "translated_fields",
+                arguments: JSON.stringify({
+                  fields: input.fields.map(({ id }: any) => ({
+                    id,
+                    translations: {
+                      en: "Apartment",
+                      ka: "ბინა",
+                      ru: "Квартира",
+                      he: "Provider rephrased this",
+                    },
+                  })),
+                }),
+              },
+            },
+          ],
+        },
+      },
+    ],
+  });
+}
+
+test("batch translation authenticates users and checks their content permission", async () => {
+  process.env.OPENROUTER_API_KEY = "test-only-openrouter";
+  let calls = 0;
+  globalThis.fetch = async (_url, options) => {
+    calls++;
+    return openRouterCompleted(options);
+  };
+  const anonymous = await app.inject({
+    method: "POST",
+    url: "/api/translate/batch",
+    payload: batchTranslation,
+  });
+  assert.equal(anonymous.statusCode, 401, anonymous.body);
+  for (const role of ["EDITOR", "TEAM_LEAD", "AGENT"]) {
+    const denied = await account(role, false);
+    const blocked = await request(
+      denied,
+      "POST",
+      "/api/translate/batch",
+      batchTranslation,
+    );
+    assert.equal(blocked.statusCode, 403, blocked.body);
+  }
+  assert.equal(calls, 0);
+  for (const user of [
+    await account("AGENT", true),
+    await account("SUPER_ADMIN", false),
+  ]) {
+    const response = await request(
+      user,
+      "POST",
+      "/api/translate/batch",
+      batchTranslation,
+    );
+    assert.equal(response.statusCode, 200, response.body);
+    assert.deepEqual(
+      response.json().data.fields.map((field: any) => field.translations.he),
+      batchTranslation.fields.map((field) => field.text),
+    );
+  }
+  assert.equal(calls, 2);
+});
+
+test("batch endpoint validates before network and exposes only safe OpenRouter status", async () => {
+  process.env.OPENROUTER_API_KEY = "never-show-this-key";
+  const editor = await account();
+  const status = await request(editor, "GET", "/api/translation/status");
+  assert.deepEqual(status.json(), {
+    data: { configured: true, provider: "openrouter" },
+  });
+  assert.equal(status.body.includes("never-show-this-key"), false);
+  let calls = 0;
+  globalThis.fetch = async (_url, options) => {
+    calls++;
+    return openRouterCompleted(options);
+  };
+  for (const payload of [
+    {
+      ...batchTranslation,
+      fields: [
+        { id: "title", text: "A" },
+        { id: "title", text: "B" },
+      ],
+    },
+    { ...batchTranslation, fields: [{ id: "title", text: "A".repeat(5001) }] },
+    { ...batchTranslation, sourceLanguage: "fr" },
+    {
+      ...batchTranslation,
+      fields: Array.from({ length: 21 }, (_, i) => ({ id: `${i}`, text: "A" })),
+    },
+  ]) {
+    const response = await request(
+      editor,
+      "POST",
+      "/api/translate/batch",
+      payload,
+    );
+    assert.equal(response.statusCode, 400, response.body);
+  }
+  assert.equal(calls, 0);
+  const before = await db.agencySettings.findUnique({
+    where: { id: "agency" },
+  });
+  const response = await request(
+    editor,
+    "POST",
+    "/api/translate/batch",
+    batchTranslation,
+  );
+  assert.equal(response.statusCode, 200, response.body);
+  assert.equal(calls, 1);
+  assert.deepEqual(
+    response.json().data.fields.map((field: any) => field.id),
+    ["title", "body"],
+  );
+  assert.deepEqual(
+    await db.agencySettings.findUnique({ where: { id: "agency" } }),
+    before,
+  );
+  globalThis.fetch = async () =>
+    Response.json({ choices: [{ finish_reason: "length" }] });
+  const failed = await request(
+    editor,
+    "POST",
+    "/api/translate/batch",
+    batchTranslation,
+  );
+  assert.equal(failed.statusCode, 502, failed.body);
+  assert.equal(failed.json().error.code, "TRANSLATION_FAILED");
+});
+
+test("OpenRouter's hourly per-user quota spans both endpoints and cannot be bypassed by changing IP", async () => {
+  process.env.OPENROUTER_API_KEY = "test-only-openrouter";
+  const editor = await account();
+  let calls = 0;
+  globalThis.fetch = async (_url, options) => {
+    calls++;
+    return openRouterCompleted(options);
+  };
+  for (let i = 0; i < 20; i++) {
+    const response = await request(
+      { ...editor, remoteAddress: `127.9.0.${i + 1}` },
+      "POST",
+      i % 2 ? "/api/translate" : "/api/translate/batch",
+      i % 2 ? translation : batchTranslation,
+    );
+    assert.equal(response.statusCode, 200, response.body);
+  }
+  const blocked = await request(
+    { ...editor, remoteAddress: "127.9.1.1" },
+    "POST",
+    "/api/translate/batch",
+    batchTranslation,
+  );
+  assert.equal(blocked.statusCode, 429, blocked.body);
+  assert.equal(blocked.json().error.code, "TRANSLATION_LIMIT");
   assert.equal(calls, 20);
 });

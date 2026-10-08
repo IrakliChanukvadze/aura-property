@@ -356,6 +356,7 @@ export function SiteContent() {
   const [error, setError] = useState<EditorCopyKey | null>(null);
   const [review, setReview] = useState<Review | null>(null);
   const [reviewed, setReviewed] = useState(false);
+  const translationPending = useRef(false);
   const draftRef = useRef(draft);
   draftRef.current = draft;
   const closeReview = useCallback(() => setReview(null), []);
@@ -391,7 +392,7 @@ export function SiteContent() {
     try {
       const status = await api<{
         configured: boolean;
-        provider: "openai" | "webhook" | null;
+        provider: "openrouter" | "openai" | "webhook" | null;
       }>("/translation/status");
       setProvider(status.configured ? "ready" : "missing");
     } catch {
@@ -476,12 +477,15 @@ export function SiteContent() {
   const translate = async () => {
     if (
       !draft ||
-      translating ||
+      translationPending.current ||
+      saving ||
+      uploading ||
       provider !== "ready" ||
       source === locale ||
       !sourceFields.length
     )
       return;
+    translationPending.current = true;
     setTranslating(true);
     setError(null);
     setMessage("");
@@ -489,23 +493,34 @@ export function SiteContent() {
       requestedSource = source,
       target = locale;
     try {
-      const fields = await Promise.all(
-        sourceFields.map(async (field) => {
-          const text = value(draft, field.key, requestedSource);
-          const result = await api<{ text: string }>("/translate", "POST", {
-            text,
-            source: requestedSource,
-            target,
-          });
-          if (
-            typeof result.text !== "string" ||
-            !result.text.trim() ||
-            result.text.length > 10000
-          )
-            throw new Error("Invalid translation");
-          return { ...field, source: text, suggestion: result.text, use: true };
-        }),
+      const result = await api<{
+        fields: { id: string; translations: Record<ContentLocale, string> }[];
+      }>("/translate/batch", "POST", {
+        sourceLanguage: requestedSource,
+        fields: sourceFields.map((field) => ({
+          id: field.key,
+          text: value(draft, field.key, requestedSource),
+          kind: field.multiline ? "description" : "title",
+        })),
+      });
+      const suggestions = new Map(
+        result.fields.map((field) => [field.id, field.translations]),
       );
+      const fields = sourceFields.map((field) => {
+        const suggestion = suggestions.get(field.key)?.[target];
+        if (
+          typeof suggestion !== "string" ||
+          !suggestion.trim() ||
+          suggestion.length > 10000
+        )
+          throw new Error("Invalid translation");
+        return {
+          ...field,
+          source: value(draft, field.key, requestedSource),
+          suggestion,
+          use: true,
+        };
+      });
       setReviewed(false);
       setReview({
         section: requestedSection,
@@ -519,6 +534,7 @@ export function SiteContent() {
     } catch {
       setError("Translation failed. Your draft has not changed; try again.");
     } finally {
+      translationPending.current = false;
       setTranslating(false);
     }
   };
@@ -954,6 +970,7 @@ export function SiteContent() {
               className="site-translate-button"
               type="button"
               disabled={!canTranslate}
+              aria-busy={translating}
               onClick={() => void translate()}
             >
               {s(translating ? "Translating…" : "Translate section for review")}

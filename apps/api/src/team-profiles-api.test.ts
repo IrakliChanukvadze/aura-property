@@ -24,7 +24,8 @@ for (const key of Object.keys(process.env)) {
   if (
     key.includes("WEBHOOK") ||
     key.startsWith("R2_") ||
-    key.startsWith("OPENAI_")
+    key.startsWith("OPENAI_") ||
+    key.startsWith("OPENROUTER_")
   )
     delete process.env[key];
 }

@@ -2,7 +2,11 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { db, content, requireAdmin, ApiError } from "./db.js";
 import { authenticate } from "./auth.js";
-import { translateText, translationStatus } from "./translation.js";
+import {
+  translateText,
+  translateBatch,
+  translationStatus,
+} from "./translation.js";
 import { agencySettings, visibleSiteTeamMembers } from "./settings.js";
 const locales = ["ka", "ru", "he", "en"];
 function explorerReady(buildings: any) {
@@ -390,14 +394,19 @@ export async function contentRoutes(app: FastifyInstance) {
     },
     async (req) => {
       content(req.actor);
-      const b = z
-        .object({
-          text: z.string().min(1).max(100000),
-          source: z.enum(["ka", "ru", "he", "en"]),
-          target: z.enum(["ka", "ru", "he", "en"]),
-        })
-        .parse(req.body);
-      return { data: { text: await translateText(b) } };
+      return { data: { text: await translateText(req.body, req.actor.id) } };
+    },
+  );
+
+  app.post(
+    "/api/translate/batch",
+    {
+      preHandler: authenticate,
+      config: { rateLimit: { max: 20, timeWindow: "1 minute" } },
+    },
+    async (req) => {
+      content(req.actor);
+      return { data: await translateBatch(req.actor.id, req.body) };
     },
   );
 
