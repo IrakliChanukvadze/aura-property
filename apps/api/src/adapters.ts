@@ -1,9 +1,11 @@
 import { randomInt } from "node:crypto";
-import { ApiError } from "./db.js";
+import { ApiError } from "./errors.js";
+import { sendResendEmail, validateEmailHeaders } from "./email.js";
 export const isDevelopment =
   process.env.NODE_ENV !== "production" &&
   process.env.DEV_INTEGRATIONS === "true";
 export async function sendEmail(to: string, subject: string, text: string) {
+  validateEmailHeaders(to, subject);
   if (process.env.EMAIL_WEBHOOK_URL) {
     await providerRequest(
       process.env.EMAIL_WEBHOOK_URL,
@@ -19,6 +21,10 @@ export async function sendEmail(to: string, subject: string, text: string) {
       },
     );
 
+    return;
+  }
+  if (process.env.RESEND_API_KEY) {
+    await sendResendEmail(to, subject, text);
     return;
   }
   if (!isDevelopment)

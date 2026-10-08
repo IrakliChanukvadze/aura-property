@@ -9,6 +9,8 @@ process.env.DEV_INTEGRATIONS = "true";
 // Tests exercise local adapters only, never configured external destinations.
 for (const key of [
   "EMAIL_WEBHOOK_URL",
+  "RESEND_API_KEY",
+  "EMAIL_FROM",
   "SMS_WEBHOOK_URL",
   "TRANSLATION_WEBHOOK_URL",
   "OPENROUTER_API_KEY",

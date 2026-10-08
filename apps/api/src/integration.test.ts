@@ -3,6 +3,13 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 process.env.NODE_ENV = "test";
 process.env.DEV_INTEGRATIONS = "true";
+for (const key of [
+  "EMAIL_WEBHOOK_URL",
+  "EMAIL_WEBHOOK_TOKEN",
+  "RESEND_API_KEY",
+  "EMAIL_FROM",
+])
+  delete process.env[key];
 const { buildApp } = await import("./server.js");
 const { db } = await import("./db.js");
 const { hashPassword } = await import("./domain.js");
