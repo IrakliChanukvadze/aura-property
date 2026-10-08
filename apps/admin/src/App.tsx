@@ -5,6 +5,7 @@ import { Form, Modal, languages } from "./ui";
 import { Leads } from "./Leads";
 import { Dashboard, Personnel, Calendar, Settings } from "./Workspace";
 import { SiteContent } from "./SiteContent";
+import { WebsiteTeam } from "./WebsiteTeam";
 import { Content } from "./Content";
 import {
   PermissionComponent,
@@ -335,7 +336,10 @@ export default function App() {
           {error && <p className="error">{error}</p>}
           <PermissionComponent user={user} permission={pagePermission(page)}>
             {page === 9 ? (
-              <SiteContent />
+              <>
+                <SiteContent />
+                <WebsiteTeam user={user} />
+              </>
             ) : page === 0 ? (
               <Dashboard />
             ) : page <= 3 ? (

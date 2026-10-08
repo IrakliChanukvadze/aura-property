@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="840" viewBox="0 0 720 840" role="img" aria-label="Temporary illustrated team avatar">
+  <defs>
+    <linearGradient id="background" x2="1" y2="1"><stop stop-color="#e1d7c6"/><stop offset="1" stop-color="#f4f2ea"/></linearGradient>
+    <linearGradient id="figure" x2=".8" y2="1"><stop stop-color="#95836b"/><stop offset="1" stop-color="#253d35"/></linearGradient>
+  </defs>
+  <rect width="720" height="840" fill="url(#background)"/>
+  <path d="M70 840V245a290 290 0 0 1 580 0v595" fill="none" stroke="#95836b" stroke-opacity=".16" stroke-width="1.5"/>
+  <path d="M120 840V285a240 240 0 0 1 480 0v555" fill="none" stroke="#95836b" stroke-opacity=".14"/>
+  <circle cx="570" cy="190" r="125" fill="#fff" opacity=".18"/>
+  <circle cx="360" cy="333" r="101" fill="url(#figure)" opacity=".9"/>
+  <path d="M138 770c0-181 79-283 222-283s222 102 222 283v70H138z" fill="url(#figure)"/>
+  <path d="M290 477l70 124 70-124" fill="#e1d7c6" opacity=".65"/>
+  <text x="360" y="716" text-anchor="middle" fill="#f4f2ea" font-family="Arial, sans-serif" font-size="60" letter-spacing="8">ლჯ</text>
+  <text x="42" y="66" fill="#95836b" font-family="Arial, sans-serif" font-size="16" letter-spacing="6">AURA / TEAM</text>
+</svg>

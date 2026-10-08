@@ -1,0 +1,77 @@
+[
+  {
+    "id": "aura-lasha-krialashvili",
+    "name": "ლაშა კრიალაშვილი",
+    "title": "თანადამფუძნებელი და გაყიდვების გუნდის ხელმძღვანელი",
+    "bio": "უძრავი ქონების გაყიდვების სფეროში 15-წლიანი გამოცდილება და საერთაშორისო ბაზარზე მუშაობის ფართო გამოცდილება.",
+    "photo": "/images/team/placeholder-lasha.svg",
+    "visible": true,
+    "translations": {
+      "en": {
+        "name": "Lasha Krialashvili",
+        "title": "Co-founder & Head of Sales",
+        "bio": "15 years of experience in real estate sales and extensive experience in international markets."
+      },
+      "ru": {
+        "name": "Лаша Криалашвили",
+        "title": "Сооснователь и руководитель отдела продаж",
+        "bio": "15 лет опыта в продажах недвижимости и большой опыт работы на международном рынке."
+      },
+      "he": {
+        "name": "לאשה קריאלאשווילי",
+        "title": "מייסד שותף וראש צוות המכירות",
+        "bio": "15 שנות ניסיון במכירות נדל״ן וניסיון נרחב בשווקים בינלאומיים."
+      }
+    }
+  },
+  {
+    "id": "aura-luka-jorjiashvili",
+    "name": "ლუკა ჯორჯიაშვილი",
+    "title": "გაყიდვების აგენტი",
+    "bio": "გაყიდვების სფეროში მრავალწლიანი გამოცდილების მქონე აგენტი.",
+    "photo": "/images/team/placeholder-luka.svg",
+    "visible": true,
+    "translations": {
+      "en": {
+        "name": "Luka Jorjiashvili",
+        "title": "Sales Agent",
+        "bio": "A sales agent with many years of experience."
+      },
+      "ru": {
+        "name": "Лука Джорджиашвили",
+        "title": "Агент по продажам",
+        "bio": "Агент с многолетним опытом в сфере продаж."
+      },
+      "he": {
+        "name": "לוקה ג׳ורג׳יאשווילי",
+        "title": "סוכן מכירות",
+        "bio": "סוכן מכירות בעל ניסיון רב שנים."
+      }
+    }
+  },
+  {
+    "id": "aura-aleksandre-kinkriashvili",
+    "name": "ალექსანდრე კინკრიაშვილი",
+    "title": "თანადამფუძნებელი და ანალიტიკის ხელმძღვანელი",
+    "bio": "ანალიტიკის მიმართულებით 10 წელზე მეტი გამოცდილება.",
+    "photo": "/images/team/placeholder-aleksandre.svg",
+    "visible": true,
+    "translations": {
+      "en": {
+        "name": "Aleksandre Kinkriashvili",
+        "title": "Co-founder & Head of Analytics",
+        "bio": "More than 10 years of experience in analytics."
+      },
+      "ru": {
+        "name": "Александр Кинкриашвили",
+        "title": "Сооснователь и руководитель аналитики",
+        "bio": "Более 10 лет опыта в аналитике."
+      },
+      "he": {
+        "name": "אלכסנדר קינקריאשווילי",
+        "title": "מייסד שותף וראש תחום האנליטיקה",
+        "bio": "מעל 10 שנות ניסיון בתחום האנליטיקה."
+      }
+    }
+  }
+]

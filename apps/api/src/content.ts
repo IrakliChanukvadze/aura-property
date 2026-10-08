@@ -3,6 +3,7 @@ import { z } from "zod";
 import { db, content, requireAdmin, ApiError } from "./db.js";
 import { authenticate } from "./auth.js";
 import { translateText, translationStatus } from "./translation.js";
+import { agencySettings, visibleSiteTeamMembers } from "./settings.js";
 const locales = ["ka", "ru", "he", "en"];
 function explorerReady(buildings: any) {
   return (
@@ -159,12 +160,23 @@ export async function contentRoutes(app: FastifyInstance) {
         : null,
     };
   });
-  app.get("/api/public/team", async () => ({
-    data: await db.user.findMany({
-      where: { active: true, publicProfile: true },
-      select: { id: true, name: true, publicData: true },
-    }),
-  }));
+  app.get("/api/public/team", async () => {
+    const [settings, staff] = await Promise.all([
+      agencySettings(),
+      db.user.findMany({
+        where: { active: true, publicProfile: true },
+        select: { id: true, name: true, publicData: true },
+      }),
+    ]);
+    const profiles = visibleSiteTeamMembers(settings.siteContent).map(
+      ({ id, name, title, bio, photo, translations }) => ({
+        id,
+        name,
+        publicData: { title, bio, photo, translations },
+      }),
+    );
+    return { data: [...profiles, ...staff] };
+  });
   app.get("/api/projects", { preHandler: authenticate }, async (req) => {
     const editable = req.actor.role === "SUPER_ADMIN" || req.actor.contentEdit;
     return {

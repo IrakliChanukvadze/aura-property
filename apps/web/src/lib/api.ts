@@ -202,6 +202,9 @@ export interface TeamMember {
     phone?: string;
     whatsapp?: string;
     bio?: string;
+    translations?: Partial<
+      Record<Locale, { name?: string; title?: string; bio?: string }>
+    >;
   };
 }
 export const publicTeam = () => get<TeamMember[]>("team", []);

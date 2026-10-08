@@ -7,6 +7,7 @@ import { resolve } from "node:path";
 import { db, content, accessible, ApiError } from "./db.js";
 import { authenticate } from "./auth.js";
 import { isDevelopment } from "./adapters.js";
+import { visibleSiteTeamMembers } from "./settings.js";
 const formats: Record<string, { ext: string; test: (b: Buffer) => boolean }> = {
   "image/jpeg": {
     ext: "jpg",
@@ -216,9 +217,12 @@ export async function mediaRoutes(app: FastifyInstance) {
     const site = await db.agencySettings.findUnique({
       where: { id: "agency" },
     });
+    const { teamMembers: _teamMembers, ...publicSite } = (site?.siteContent ??
+      {}) as Record<string, unknown>;
+    const publicMembers = visibleSiteTeamMembers(site?.siteContent);
     if (
-      ![...projects, ...posts, ...profiles, site?.siteContent || {}].some((x) =>
-        JSON.stringify(x).includes(url),
+      ![...projects, ...posts, ...profiles, publicSite, ...publicMembers].some(
+        (x) => JSON.stringify(x).includes(url),
       )
     )
       throw new ApiError(404, "NOT_FOUND", "File is not published");

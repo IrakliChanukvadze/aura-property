@@ -24,6 +24,12 @@ export default async function Page({
   const site = await publicSite();
   const d = { ...t(locale), ...site.translations?.[locale] };
   const team = await publicTeam();
+  const placeholderLabel = {
+    en: "Temporary illustration",
+    ka: "დროებითი ილუსტრაცია",
+    ru: "Временная иллюстрация",
+    he: "איור זמני",
+  }[locale];
   return (
     <>
       <section className="section page-section about-intro">
@@ -34,23 +40,48 @@ export default async function Page({
       <div className="about-image">
         <img src={site.aboutImage || imageCity} alt={`Aura / ${d.about}`} />
       </div>
-      <section className="section agency-section">
-        <h2>{d.team}</h2>
-        <div>
-          {team.length === 0 ? (
-            <p>{d.teamBody}</p>
-          ) : (
-            <div className="team-grid">
-              {team.map((member) => (
+      <section
+        className="section public-team-section"
+        id="team"
+        aria-labelledby="team-title"
+      >
+        <h2 id="team-title">{d.team}</h2>
+        {team.length === 0 ? (
+          <p>{d.teamBody}</p>
+        ) : (
+          <div className="team-grid">
+            {team.map((member) => {
+              const copy = member.publicData.translations?.[locale];
+              const name = copy?.name || member.name;
+              const title =
+                copy?.title ||
+                member.publicData.title ||
+                member.publicData.role;
+              const bio = copy?.bio || member.publicData.bio;
+              const temporary = member.publicData.photo?.startsWith(
+                "/images/team/placeholder-",
+              );
+              return (
                 <article className="team-card" key={member.id}>
                   {member.publicData.photo && (
-                    <img src={member.publicData.photo} alt={member.name} />
+                    <div className="team-portrait">
+                      <img
+                        src={member.publicData.photo}
+                        alt={temporary ? `${name} — ${placeholderLabel}` : name}
+                        width={720}
+                        height={840}
+                        loading="lazy"
+                      />
+                      {temporary && (
+                        <span className="team-placeholder-label">
+                          {placeholderLabel}
+                        </span>
+                      )}
+                    </div>
                   )}
-                  <h3>{member.name}</h3>
-                  {(member.publicData.title || member.publicData.role) && (
-                    <p>{member.publicData.title || member.publicData.role}</p>
-                  )}
-                  {member.publicData.bio && <p>{member.publicData.bio}</p>}
+                  <h3>{name}</h3>
+                  {title && <p className="team-role">{title}</p>}
+                  {bio && <p className="team-bio">{bio}</p>}
                   {member.publicData.phone && (
                     <a href={`tel:${member.publicData.phone}`}>
                       {member.publicData.phone}
@@ -64,10 +95,10 @@ export default async function Page({
                     </a>
                   )}
                 </article>
-              ))}
-            </div>
-          )}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </section>
     </>
   );
